@@ -1,0 +1,8 @@
+.envrc
+standardfile.db
+.standardfile
+auth_params.json
+items_*.json
+notes_*.json
+dist/
+TODO.md

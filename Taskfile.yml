@@ -1,0 +1,106 @@
+# https://taskfile.dev
+# https://github.com/mdouchement/checksum
+
+version: '2'
+
+vars:
+  VERSION: 0.2.0
+  REVISION: { sh: git rev-parse HEAD }
+
+env:
+  GO111MODULE: on
+  CGO_ENABLED: 0
+
+tasks:
+  docker:
+    desc: Build a Docker image of the server
+    cmds:
+      - task: clean
+      - docker build -t mdouchement/standardfile:{{.VERSION}} .
+
+  clean:
+    desc: Clean project
+    cmds:
+      - rm -rf ./dist
+
+  build-server:
+    desc: Build the server
+    cmds:
+      - task: clean
+      - mkdir -p ./dist
+      - task: build
+        vars:
+          BINARY_NAME: standardfile
+          ENTRYPOINT: ./cmd/standardfile
+          TARGET_DIST: ""
+
+  build-all:
+    desc: Build all binaries
+    cmds:
+      - task: clean
+      - mkdir -p ./dist
+
+      - task: build
+        vars:
+          BINARY_NAME: standardfile-linux-amd64
+          ENTRYPOINT: ./cmd/standardfile
+          TARGET_DIST: GOOS=linux GOARCH=amd64
+
+      - task: checksum
+        vars:
+          BINARY_NAME: standardfile-linux-amd64
+
+      - task: build
+        vars:
+          BINARY_NAME: standardfile-linux-arm64
+          ENTRYPOINT: ./cmd/standardfile
+          TARGET_DIST: GOOS=linux GOARCH=arm64
+
+      - task: checksum
+        vars:
+          BINARY_NAME: standardfile-linux-arm64
+
+      - task: build
+        vars:
+          BINARY_NAME: sfc-linux-amd64
+          ENTRYPOINT: ./cmd/sfc
+          TARGET_DIST: GOOS=linux GOARCH=amd64
+
+      - task: checksum
+        vars:
+          BINARY_NAME: sfc-linux-amd64
+
+      - task: build
+        vars:
+          BINARY_NAME: sfc-darwin-amd64
+          ENTRYPOINT: ./cmd/sfc
+          TARGET_DIST: GOOS=darwin GOARCH=amd64
+
+      - task: checksum
+        vars:
+          BINARY_NAME: sfc-darwin-amd64
+
+      - task: build
+        vars:
+          BINARY_NAME: sfc-windows-amd64.exe
+          ENTRYPOINT: ./cmd/sfc
+          TARGET_DIST: GOOS=windows GOARCH=amd64
+
+      - task: checksum
+        vars:
+          BINARY_NAME: sfc-windows-amd64.exe
+
+  build:
+    cmds:
+      - '{{.TARGET_DIST}} go build -ldflags "{{.LDFLAGS | splitList "\n" | join " "}}" -o ./dist/{{.BINARY_NAME}} {{.ENTRYPOINT}}'
+    vars:
+      LDFLAGS: |
+        -s
+        -w
+        -X main.version={{.VERSION}}
+        -X main.revision={{ printf "%.7s" .REVISION }}
+        -X main.date={{now | date "2006-01-02~15:04:05"}}
+
+  checksum:
+    cmds:
+      - cd dist && checksum --algs="sha256" --append-to checksum.txt {{.BINARY_NAME}}

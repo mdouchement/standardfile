@@ -1,0 +1,13 @@
+version: '2'
+
+services:
+  standardfile:
+    restart: always
+    image: mdouchement/standardfile
+    container_name: standardfile
+    ports:
+      - 8080:5000
+    volumes:
+      - /tmp:/data/database
+    environment:
+      SECRET_KEY: c271d077590b3e1c0237cc7db11c6ad1a34347f9d39afa235d04fea8c51fbfda2d0b7568fde01e3a62439f100be66cf571d9f90d386c64e5200326e6e12f328b

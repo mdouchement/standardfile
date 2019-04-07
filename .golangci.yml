@@ -1,0 +1,12 @@
+run:
+  tests: false
+
+linters:
+  enable-all: true
+  disable:
+    - lll
+    - maligned # The tool doesn't provide any hints so it's disabled.
+    # These linters needs to refactor the library => postpone TODO
+    # Details: https://peter.bourgon.org/blog/2017/06/09/theory-of-modern-go.html
+    - gochecknoinits
+    - gochecknoglobals
