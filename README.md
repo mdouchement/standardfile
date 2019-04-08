@@ -1,5 +1,6 @@
 # Yet Another Standardfile Implementation in Go
 
+[![CircleCI](https://circleci.com/gh/mdouchement/standardfile/tree/master.svg?style=shield)](https://circleci.com/gh/mdouchement/standardfile/tree/master)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/mdouchement/standardfile)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mdouchement/standardfile)](https://goreportcard.com/report/github.com/mdouchement/standardfile)
 [![License](https://img.shields.io/github/license/mdouchement/standardfile.svg)](http://opensource.org/licenses/MIT)
@@ -14,17 +15,20 @@ This server implementation is built with Go and can be deployed in seconds.
 
 https://hub.docker.com/r/mdouchement/standardfile
 
+##### You may require to add `/api` to the url of your server if you plan to use this server with https://standardnotes.org/
+
 ### Client library
 
 Go to `pgk/libsf` for more details.
+https://godoc.org/github.com/mdouchement/standardfile/pkg/libsf
+
+It is an alternative to https://github.com/jonhadfield/gosn
 
 ### SF client
 
 ```sh
 go run cmd/sfc/main.go -h
 ```
-
-##### You may require to add `/api` to the url of your server if you plan to use this server with https://standardnotes.org/
 
 ## Requirements
 
