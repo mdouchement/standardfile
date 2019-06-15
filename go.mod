@@ -1,5 +1,7 @@
 module github.com/mdouchement/standardfile
 
+go 1.12
+
 require (
 	github.com/DataDog/zstd v1.3.5 // indirect
 	github.com/Sereal/Sereal v0.0.0-20190203221631-e99c7e10fca4 // indirect
