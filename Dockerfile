@@ -12,6 +12,7 @@ WORKDIR /go/src/github.com/mdouchement/standardfile
 
 ENV CGO_ENABLED 0
 ENV GO111MODULE on
+ENV GOPROXY https://proxy.golang.org
 
 COPY . /go/src/github.com/mdouchement/standardfile
 # Dependencies
