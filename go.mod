@@ -8,12 +8,15 @@ require (
 	github.com/appleboy/gofight v2.0.0+incompatible
 	github.com/araddon/dateparse v0.0.0-20181123171228-21df004e09ca
 	github.com/asdine/storm v2.1.2+incompatible
+	github.com/bep/debounce v1.2.0
 	github.com/buger/jsonparser v0.0.0-20181115193947-bf1c66bbce23 // indirect
 	github.com/chzyer/logex v1.1.10 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
 	github.com/d1str0/pkcs7 v0.0.0-20160212234353-835625882f1b
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/gcla/gowid v1.0.1-0.20190603034859-beab5094f400
+	github.com/gcla/tcell v1.1.2-0.20190603033913-d7ac3498c3f1
 	github.com/gin-contrib/sse v0.0.0-20190301062529-5545eab6dad3 // indirect
 	github.com/gin-gonic/gin v1.3.0 // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible
@@ -28,7 +31,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/oleiade/reflections v1.0.0
 	github.com/pkg/errors v0.8.1
+	github.com/sanity-io/litter v1.1.0
 	github.com/simplereach/timeutils v1.2.0 // indirect
+	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/stretchr/testify v1.3.1-0.20190311161405-34c6fa2dc709
@@ -47,5 +52,6 @@ require (
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.2.2 // indirect
 )

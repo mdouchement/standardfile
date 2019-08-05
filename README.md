@@ -15,8 +15,6 @@ This server implementation is built with Go and can be deployed in seconds.
 
 https://hub.docker.com/r/mdouchement/standardfile
 
-##### You may require to add `/api` to the url of your server if you plan to use this server with https://standardnotes.org/
-
 ### Client library
 
 Go to `pgk/libsf` for more details.
@@ -29,6 +27,9 @@ It is an alternative to https://github.com/jonhadfield/gosn
 ```sh
 go run cmd/sfc/main.go -h
 ```
+
+Terminal UI client:
+![sfc note](https://user-images.githubusercontent.com/6150317/62490536-c997f780-b7c9-11e9-867a-bc619d286b31.png)
 
 ## Requirements
 
