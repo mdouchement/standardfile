@@ -4,7 +4,7 @@
 version: '2'
 
 vars:
-  VERSION: 0.2.2
+  VERSION: 0.3.0
   REVISION: { sh: git rev-parse HEAD }
 
 env:

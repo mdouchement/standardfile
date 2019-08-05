@@ -24,6 +24,7 @@ func main() {
 	c.AddCommand(loginCmd)
 	c.AddCommand(backupCmd)
 	c.AddCommand(unsealCmd)
+	c.AddCommand(noteCmd)
 
 	if err := c.Execute(); err != nil {
 		fmt.Println(err)
@@ -34,7 +35,7 @@ func main() {
 var (
 	loginCmd = &cobra.Command{
 		Use:   "login",
-		Short: "login to the StandardFile server",
+		Short: "Login to the StandardFile server",
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return client.Login()
@@ -43,7 +44,7 @@ var (
 
 	backupCmd = &cobra.Command{
 		Use:   "backup",
-		Short: "backup your notes",
+		Short: "Backup your notes",
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return client.Backup()
@@ -56,6 +57,15 @@ var (
 		Args:  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return client.Unseal(args[0])
+		},
+	}
+
+	noteCmd = &cobra.Command{
+		Use:   "note",
+		Short: "Text-based StandardNotes application",
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, args []string) error {
+			return client.Note()
 		},
 	}
 )

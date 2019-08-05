@@ -1,6 +1,7 @@
 .envrc
 standardfile.db
 .standardfile
+sfc.log
 auth_params.json
 items_*.json
 notes_*.json
