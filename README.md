@@ -40,6 +40,7 @@ Terminal UI client:
 - [Cobra](https://github.com/spf13/cobra)
 - [Echo](https://github.com/labstack/echo)
 - [BoltDB](https://github.com/etcd-io/bbolt) + [Storm](https://github.com/asdine/storm) Toolkit
+- [Gowid](https://github.com/gcla/gowid)
 
 
 ## Differences with reference implementation
