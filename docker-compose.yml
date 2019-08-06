@@ -7,10 +7,11 @@ services:
     container_name: standardfile
     ports:
       - 8080:5000
+    # Create a dedicated user on host:
+    #   useradd --no-create-home --shell /sbin/nologin standardfile
+    user: root:root # or use your dedicated user with: $(id -u standardfile):$(id -g standardfile)
     volumes:
-      - /tmp:/data/database
+      - /tmp/standardfile:/data/database # chown -R $(id -u standardfile):$(id -g standardfile) /tmp/standardfile
     environment:
       SECRET_KEY: c271d077590b3e1c0237cc7db11c6ad1a34347f9d39afa235d04fea8c51fbfda2d0b7568fde01e3a62439f100be66cf571d9f90d386c64e5200326e6e12f328b
-      # Switch user with uid & gid values from your host that bind the volumes.
-      # STANDARDFILE_USERNAME: 501
-      # STANDARDFILE_GROUPNAME: 20
+
