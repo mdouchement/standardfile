@@ -30,6 +30,10 @@ RUN mkdir -p ${DATABASE_PATH}
 
 COPY --from=build-env /go/src/github.com/mdouchement/standardfile/dist/standardfile /usr/local/bin/
 
+RUN apk add su-exec
+COPY docker-entrypoint.sh /usr/bin/
+
+ENTRYPOINT ["/usr/bin/docker-entrypoint.sh"]
 EXPOSE 5000
 CMD ["standardfile", "server", "-p", "5000"]
 # CMD ["standardfile", "server", "-p", "5000", "--noreg"]
