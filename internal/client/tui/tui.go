@@ -42,10 +42,9 @@ func (ui *TUI) Run() {
 	ui.App.MainLoop(gowid.UnhandledInputFunc(ui.unhandled))
 }
 
-// CleanExit exits the application properly.
-func (ui *TUI) CleanExit() {
-	ui.App.Close() // Cleanup tcell screen's objects
-	ui.App.Quit()
+// Cleanup cleans the application properly (in case of panic).
+func (ui *TUI) Cleanup() {
+	ui.App.GetScreen().Fini() // Cleanup tcell screen's objects
 }
 
 // Register registers an item.
