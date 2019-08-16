@@ -48,7 +48,7 @@ func Note() error {
 	if err != nil {
 		return err
 	}
-	defer ui.CleanExit()
+	defer ui.Cleanup()
 
 	items := libsf.NewSyncItems()
 	items.Limit = 10000 // TODO: make it dynamic by adding a config menu persisted in the `.standardfile`
