@@ -8,7 +8,7 @@ import (
 	"github.com/valyala/fastjson"
 )
 
-const noteTimeLayout = "2006-01-02T15:04:05.999Z"
+const noteTimeLayout = "2006-01-02T15:04:05.000Z"
 
 // A Note is plaintext Item content.
 type Note struct {
