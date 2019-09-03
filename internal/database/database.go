@@ -30,6 +30,8 @@ type (
 
 	// An ItemInteraction defines all the methods used to interact with a item record(s).
 	ItemInteraction interface {
+		// FindItem returns the item for the given id (UUID).
+		FindItem(id string) (*model.Item, error)
 		// FindItemsByParams returns all the matching records for the given parameters.
 		// It also returns a boolean to true if there is more items than the given limit.
 		FindItemsByParams(userID, contentType string, updated time.Time, strictTime, filterDeleted bool, limit int) ([]*model.Item, bool, error)
