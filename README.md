@@ -5,7 +5,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/mdouchement/standardfile)](https://goreportcard.com/report/github.com/mdouchement/standardfile)
 [![License](https://img.shields.io/github/license/mdouchement/standardfile.svg)](http://opensource.org/licenses/MIT)
 
-This is a Golang implementation of the [Standard File](https://standardfile.org/) protocol.
+This is a 100% Golang implementation of the [Standard File](https://standardfile.org/) protocol. It aims to be **portable** and **lightweight**.
 
 ### Running your own server
 
