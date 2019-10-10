@@ -90,6 +90,7 @@ func EchoEngine(ctrl IOC) *echo.Echo {
 // PrintRoutes prints the Echo engin exposed routes.
 func PrintRoutes(e *echo.Echo) {
 	ignored := map[string]bool{
+		"":   true,
 		".":  true,
 		"/*": true,
 	}

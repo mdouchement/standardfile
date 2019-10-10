@@ -101,6 +101,15 @@ func (c *strm) FindUserByMail(email string) (*model.User, error) {
 	return &user, nil
 }
 
+// FindItem returns the item for the given id (UUID).
+func (c *strm) FindItem(id string) (*model.Item, error) {
+	var item model.Item
+	if err := c.db.One("ID", id, &item); err != nil {
+		return nil, errors.Wrap(err, "could not find item")
+	}
+	return &item, nil
+}
+
 // FindItemsByParams returns all the matching records for the given parameters.
 // It also returns a boolean to true if there is more items than the given limit.
 func (c *strm) FindItemsByParams(userID, contentType string, updated time.Time, strictTime, noDeleted bool, limit int) ([]*model.Item, bool, error) {
