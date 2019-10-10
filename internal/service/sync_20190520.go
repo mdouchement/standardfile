@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"math"
 	"time"
 
@@ -109,10 +108,6 @@ func (s *syncService20190520) save() (saved []*model.Item, conflicts []*Conflict
 	for _, incomingItem := range s.Base.Params.Items {
 		incomingItem.UserID = s.Base.User.ID
 
-		if incomingItem.Deleted {
-			s.Base.prepareDelete(incomingItem)
-		}
-
 		serverItem, err := s.Base.db.FindItem(incomingItem.GetID())
 		newRecord := s.Base.db.IsNotFound(err)
 		if err != nil && !newRecord {
@@ -136,8 +131,7 @@ func (s *syncService20190520) save() (saved []*model.Item, conflicts []*Conflict
 
 			saveIncoming := true
 			// SFJS did not send updated_at prior to 0.3.59 but applied by the database layer so the value is OK.
-			difference := float64(incomingItem.UpdatedAt.Sub(*serverItem.UpdatedAt).Nanoseconds())
-			difference = difference / float64(time.Second)
+			difference := incomingItem.UpdatedAt.Sub(*serverItem.UpdatedAt).Seconds()
 
 			switch {
 			case difference < 0:
@@ -151,8 +145,6 @@ func (s *syncService20190520) save() (saved []*model.Item, conflicts []*Conflict
 				saveIncoming = true
 			}
 
-			fmt.Println(saveIncoming, difference, incomingItem.UpdatedAt.Sub(*serverItem.UpdatedAt))
-
 			if !saveIncoming {
 				// Dont save incoming and send it back. At this point the server item is likely to be included
 				// in retrievedItems in a subsequent sync, so when that value comes into the client.
@@ -161,12 +153,14 @@ func (s *syncService20190520) save() (saved []*model.Item, conflicts []*Conflict
 					Type:       "sync_conflict",
 				})
 				tobedeleted[serverItem.GetID()] = true
-				fmt.Println("Note saved:", serverItem.GetID())
 				continue
 			}
 		}
 
-		fmt.Println("Saved:", incomingItem.GetID())
+		if incomingItem.Deleted {
+			s.Base.prepareDelete(incomingItem)
+		}
+
 		err = s.Base.db.Save(incomingItem) // aka item.update(..)
 		if err != nil {
 			// TODO: return an Internal Server Error?
