@@ -4,10 +4,9 @@ go 1.12
 
 require (
 	github.com/DataDog/zstd v1.3.5 // indirect
-	github.com/Sereal/Sereal v0.0.0-20190203221631-e99c7e10fca4 // indirect
 	github.com/appleboy/gofight v2.0.0+incompatible
 	github.com/araddon/dateparse v0.0.0-20181123171228-21df004e09ca
-	github.com/asdine/storm v2.1.2+incompatible
+	github.com/asdine/storm v1.1.1-0.20190808085602-a53b1e41feb9
 	github.com/bep/debounce v1.2.0
 	github.com/buger/jsonparser v0.0.0-20181115193947-bf1c66bbce23 // indirect
 	github.com/chzyer/logex v1.1.10 // indirect
@@ -20,7 +19,6 @@ require (
 	github.com/gin-contrib/sse v0.0.0-20190301062529-5545eab6dad3 // indirect
 	github.com/gin-gonic/gin v1.3.0 // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible
-	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
@@ -41,10 +39,10 @@ require (
 	github.com/valyala/fastjson v1.4.1
 	github.com/vmihailenco/msgpack v4.0.2+incompatible // indirect
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
-	go.etcd.io/bbolt v1.3.2 // indirect
+	go.etcd.io/bbolt v1.3.3 // indirect
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
-	golang.org/x/sys v0.0.0-20190804053845-51ab0e2deafa // indirect
+	golang.org/x/sys v0.0.0-20191009170203-06d7bd2c5f4f // indirect
 	golang.org/x/tools v0.0.0-20190806143415-35ef2682e516 // indirect
 	google.golang.org/appengine v1.4.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
