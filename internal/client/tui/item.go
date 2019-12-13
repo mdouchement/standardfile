@@ -12,7 +12,7 @@ import (
 	"github.com/gcla/gowid/widgets/styled"
 	"github.com/gcla/gowid/widgets/text"
 	"github.com/gcla/gowid/widgets/vscroll"
-	"github.com/gcla/tcell"
+	"github.com/gdamore/tcell"
 	"github.com/mdouchement/standardfile/pkg/libsf"
 )
 
@@ -188,5 +188,5 @@ func (w *ItemEditor) Render(size gowid.IRenderSize, focus gowid.Selector, app go
 	w.pgUpDown = 0
 	w.sb.Top, w.sb.Middle, w.sb.Bottom = w.e.CalculateTopMiddleBottom(ebox)
 
-	return gowid.Render(w.Widget, size, focus, app)
+	return w.Widget.Render(size, focus, app)
 }
