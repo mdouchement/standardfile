@@ -33,6 +33,7 @@ func EchoEngine(ctrl IOC) *echo.Echo {
 	engine.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "[${status}] ${method} ${uri} (${bytes_in}) ${latency_human}\n",
 	}))
+	engine.Binder = middlewares.NewBinder()
 	// Error handler
 	engine.HTTPErrorHandler = middlewares.HTTPErrorHandler
 

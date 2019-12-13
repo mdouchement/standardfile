@@ -10,7 +10,7 @@ import (
 	"github.com/gcla/gowid/widgets/pile"
 	"github.com/gcla/gowid/widgets/styled"
 	"github.com/gcla/gowid/widgets/text"
-	"github.com/gcla/tcell"
+	"github.com/gdamore/tcell"
 	"github.com/pkg/errors"
 )
 
