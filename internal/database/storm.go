@@ -3,9 +3,9 @@ package database
 import (
 	"time"
 
-	"github.com/asdine/storm"
-	"github.com/asdine/storm/codec/msgpack"
-	"github.com/asdine/storm/q"
+	"github.com/asdine/storm/v3"
+	"github.com/asdine/storm/v3/codec/msgpack"
+	"github.com/asdine/storm/v3/q"
 	"github.com/gofrs/uuid"
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/pkg/errors"

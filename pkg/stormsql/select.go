@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/araddon/dateparse"
-	"github.com/asdine/storm/q"
+	"github.com/asdine/storm/v3/q"
 	"github.com/pkg/errors"
 	"github.com/xwb1989/sqlparser"
 )

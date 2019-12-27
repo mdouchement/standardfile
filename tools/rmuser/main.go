@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/asdine/storm"
-	"github.com/asdine/storm/q"
+	"github.com/asdine/storm/v3"
+	"github.com/asdine/storm/v3/q"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/pkg/errors"
