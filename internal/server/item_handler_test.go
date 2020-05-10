@@ -81,7 +81,7 @@ func TestRequestItemsSync20161215(t *testing.T) {
 
 		at := libsf.TimeFromToken(v.SyncToken)
 		assert.NotZero(t, at)
-		assert.WithinDuration(t, time.Now(), at, 100*time.Millisecond)
+		assert.WithinDuration(t, time.Now(), at, 2*time.Second)
 
 		assert.Empty(t, v.Retrieved) // Nothing for this user
 		assert.Empty(t, v.Saved)
@@ -109,7 +109,7 @@ func TestRequestItemsSync20161215(t *testing.T) {
 
 		at := libsf.TimeFromToken(v.SyncToken)
 		assert.NotZero(t, at)
-		assert.WithinDuration(t, time.Now(), at, 100*time.Millisecond)
+		assert.WithinDuration(t, time.Now(), at, 2*time.Second)
 
 		assert.Len(t, v.Retrieved, 1)
 		assert.Empty(t, v.Saved)
@@ -127,7 +127,7 @@ func TestRequestItemsSync20161215(t *testing.T) {
 
 		at := libsf.TimeFromToken(v.SyncToken)
 		assert.NotZero(t, at)
-		assert.WithinDuration(t, time.Now(), at, 100*time.Millisecond)
+		assert.WithinDuration(t, time.Now(), at, 2*time.Second)
 
 		assert.Len(t, v.Retrieved, 1)
 		assert.Len(t, v.Saved, 1)
@@ -144,7 +144,7 @@ func TestRequestItemsSync20161215(t *testing.T) {
 
 		at := libsf.TimeFromToken(v.SyncToken)
 		assert.NotZero(t, at)
-		assert.WithinDuration(t, time.Now(), at, 100*time.Millisecond)
+		assert.WithinDuration(t, time.Now(), at, 2*time.Second)
 
 		assert.Len(t, v.Retrieved, 2)
 		assert.Empty(t, v.Saved)
@@ -219,7 +219,7 @@ func TestRequestItemsSync20190520(t *testing.T) {
 
 		at := libsf.TimeFromToken(v.SyncToken)
 		assert.NotZero(t, at)
-		assert.WithinDuration(t, time.Now(), at, 100*time.Millisecond)
+		assert.WithinDuration(t, time.Now(), at, 2*time.Second)
 
 		assert.Empty(t, v.Retrieved) // Nothing for this user
 		assert.Empty(t, v.Saved)
@@ -247,7 +247,7 @@ func TestRequestItemsSync20190520(t *testing.T) {
 
 		at := libsf.TimeFromToken(v.SyncToken)
 		assert.NotZero(t, at)
-		assert.WithinDuration(t, time.Now(), at, 100*time.Millisecond)
+		assert.WithinDuration(t, time.Now(), at, 2*time.Second)
 
 		assert.Len(t, v.Retrieved, 1)
 		assert.Empty(t, v.Saved)
@@ -265,7 +265,7 @@ func TestRequestItemsSync20190520(t *testing.T) {
 
 		at := libsf.TimeFromToken(v.SyncToken)
 		assert.NotZero(t, at)
-		assert.WithinDuration(t, time.Now(), at, 100*time.Millisecond)
+		assert.WithinDuration(t, time.Now(), at, 2*time.Second)
 
 		assert.Len(t, v.Retrieved, 1)
 		assert.Len(t, v.Saved, 1)
@@ -282,7 +282,7 @@ func TestRequestItemsSync20190520(t *testing.T) {
 
 		at := libsf.TimeFromToken(v.SyncToken)
 		assert.NotZero(t, at)
-		assert.WithinDuration(t, time.Now(), at, 100*time.Millisecond)
+		assert.WithinDuration(t, time.Now(), at, 2*time.Second)
 
 		assert.Len(t, v.Retrieved, 2)
 		assert.Empty(t, v.Saved)

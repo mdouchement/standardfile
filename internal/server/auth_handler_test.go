@@ -184,7 +184,7 @@ func TestRequestUpdate(t *testing.T) {
 
 		timestamp, err = time.Parse(time.RFC3339Nano, string(v.Get("user", "updated_at").GetStringBytes()))
 		assert.NoError(t, err)
-		assert.WithinDuration(t, user.UpdatedAt.UTC(), timestamp.UTC(), 500*time.Millisecond)
+		assert.WithinDuration(t, user.UpdatedAt.UTC(), timestamp.UTC(), 2*time.Second)
 	})
 }
 
@@ -242,7 +242,7 @@ func TestRequestUpdatePassword(t *testing.T) {
 
 		timestamp, err = time.Parse(time.RFC3339Nano, string(v.Get("user", "updated_at").GetStringBytes()))
 		assert.NoError(t, err)
-		assert.WithinDuration(t, user.UpdatedAt.UTC(), timestamp.UTC(), 500*time.Millisecond)
+		assert.WithinDuration(t, user.UpdatedAt.UTC(), timestamp.UTC(), 2*time.Second)
 	})
 
 	r.POST("/auth/change_pw").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
