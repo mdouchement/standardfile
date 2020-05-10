@@ -1,7 +1,6 @@
 # Yet Another Standardfile Implementation in Go
 
-[![CircleCI](https://circleci.com/gh/mdouchement/standardfile/tree/master.svg?style=shield)](https://circleci.com/gh/mdouchement/standardfile/tree/master)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/mdouchement/standardfile)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/mdouchement/standardfile)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mdouchement/standardfile)](https://goreportcard.com/report/github.com/mdouchement/standardfile)
 [![License](https://img.shields.io/github/license/mdouchement/standardfile.svg)](http://opensource.org/licenses/MIT)
 
