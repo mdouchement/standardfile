@@ -222,11 +222,16 @@ func TestRequestUpdatePassword(t *testing.T) {
 		assert.JSONEq(t, `{"error":{"message":"The current password you entered is incorrect. Please try again."}}`, r.Body.String())
 	})
 
+	time.Sleep(time.Second) // Ensure claim["iat"] is older than 1s
+
 	params["current_password"] = "password42"
 	r.POST("/auth/change_pw").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusOK, r.Code)
 
 		v, err := fastjson.Parse(r.Body.String())
+		assert.NoError(t, err)
+
+		user, err = ioc.Database.FindUser(user.ID) // reload user
 		assert.NoError(t, err)
 
 		assert.Equal(t, server.TokenFromUser(ioc, user), string(v.Get("token").GetStringBytes()))
