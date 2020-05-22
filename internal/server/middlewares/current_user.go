@@ -52,7 +52,7 @@ func CurrentUser(db database.Client) echo.MiddlewareFunc {
 				panic("unsuported iat underlying type")
 			}
 
-			if iat <= user.PasswordUpdatedAt {
+			if iat < user.PasswordUpdatedAt {
 				return c.JSON(http.StatusUnauthorized, echo.Map{
 					"error": echo.Map{
 						"tag":     "invalid-auth",
