@@ -88,7 +88,7 @@ func (i *Item) Seal(mk, ak string) error {
 		return errors.Wrap(err, "could not generate encryption key")
 	}
 	i.key = vault{
-		version: "003", // TODO params.Version
+		version: i.AuthParams.Version(),
 		uuid:    i.ID,
 		params:  i.AuthParams,
 	}
@@ -117,7 +117,7 @@ func (i *Item) Seal(mk, ak string) error {
 	}
 
 	i.content = vault{
-		version: "003", // TODO params.Version
+		version: i.AuthParams.Version(),
 		uuid:    i.ID,
 		params:  i.AuthParams,
 	}
