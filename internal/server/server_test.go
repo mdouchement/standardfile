@@ -75,6 +75,7 @@ func createUser(ioc server.IOC) *model.User {
 	user.Password, err = argon2.GenerateFromPasswordString("password42", argon2.Default)
 	user.PasswordCost = 110000
 	user.PasswordNonce = "nonce42"
+	user.PasswordUpdatedAt = time.Now().Add(-12 * time.Hour).Unix()
 	if err != nil {
 		panic(err)
 	}
