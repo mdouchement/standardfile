@@ -17,6 +17,7 @@ type (
 		IsNotFound(err error) bool
 
 		UserInteraction
+		SessionInteraction
 		ItemInteraction
 	}
 
@@ -26,6 +27,16 @@ type (
 		FindUser(id string) (*model.User, error)
 		// FindUserByMail returns the user for the given email.
 		FindUserByMail(email string) (*model.User, error)
+	}
+
+	// An SessionInteraction defines all the methods used to interact with a session record.
+	SessionInteraction interface {
+		// FindSession returns the session for the given id (UUID).
+		FindSession(id string) (*model.Session, error)
+		// FindSessionByAccessToken returns the session for the given access token.
+		FindSessionByAccessToken(token string) (*model.Session, error)
+		// FindSessionsByUserID returns all the sessions for the given user id.
+		FindSessionsByUserID(userID string) ([]*model.Session, error)
 	}
 
 	// An ItemInteraction defines all the methods used to interact with a item record(s).

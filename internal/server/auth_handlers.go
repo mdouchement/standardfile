@@ -18,8 +18,12 @@ import (
 type (
 	// auth contains all authentication handlers.
 	auth struct {
-		db         database.Client
+		db database.Client
+		// JWT params
 		signingKey []byte
+		// Session params
+		accessTokenExpirationTime  time.Duration
+		refreshTokenExpirationTime time.Duration
 	}
 
 	credentials struct {

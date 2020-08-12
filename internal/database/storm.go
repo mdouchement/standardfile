@@ -101,6 +101,34 @@ func (c *strm) FindUserByMail(email string) (*model.User, error) {
 	return &user, nil
 }
 
+// FindSession returns the session for the given id (UUID).
+func (c *strm) FindSession(id string) (*model.Session, error) {
+	var session model.Session
+	if err := c.db.One("ID", id, &session); err != nil {
+		return nil, errors.Wrap(err, "find session by id")
+	}
+	return &session, nil
+}
+
+// FindSessionByAccessToken returns the session for the given access token.
+func (c *strm) FindSessionByAccessToken(token string) (*model.Session, error) {
+	var session model.Session
+	if err := c.db.One("AccessToken", token, &session); err != nil {
+		return nil, errors.Wrap(err, "find session by access token")
+	}
+	return &session, nil
+}
+
+// FindSessionsByUserID returns all the sessions for the given user id.
+func (c *strm) FindSessionsByUserID(userID string) ([]*model.Session, error) {
+	sessions := make([]*model.Session, 0)
+	err := c.db.Select(q.Eq("UserID", userID), q.Gt("ExpireAt", time.Now())).OrderBy("UpdatedAt").Find(&sessions)
+	if err != nil && !c.IsNotFound(err) {
+		return nil, errors.Wrap(err, "could not find sessions")
+	}
+	return sessions, nil
+}
+
 // FindItem returns the item for the given id (UUID).
 func (c *strm) FindItem(id string) (*model.Item, error) {
 	var item model.Item

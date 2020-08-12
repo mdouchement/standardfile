@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/server"
@@ -91,11 +92,14 @@ var (
 			defer db.Close()
 
 			engine := server.EchoEngine(server.IOC{
-				Version:        version,
-				Database:       db,
-				NoRegistration: noreg,
-				SigningKey:     []byte(secret),
+				Version:                    version,
+				Database:                   db,
+				NoRegistration:             noreg,
+				SigningKey:                 []byte(secret),
+				AccessTokenExpirationTime:  60 * 24 * time.Hour,  // TODO: must be a configurable value
+				RefreshTokenExpirationTime: 365 * 24 * time.Hour, // TODO: must be a configurable value
 			})
+
 			server.PrintRoutes(engine)
 
 			listen := fmt.Sprintf("%s:%s", binding, port)

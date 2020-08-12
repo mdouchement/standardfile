@@ -9,7 +9,7 @@ const (
 	VersionLatest = Version3
 )
 
-// A User represents a database record and the rendered API response.
+// A User represents a database record.
 type User struct {
 	Base `msgpack:",inline" storm:"inline"`
 

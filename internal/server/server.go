@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server/middlewares"
+	"github.com/mdouchement/standardfile/internal/server/session"
 )
 
 // An IOC is an Iversion Of Control pattern used to init the server package.
@@ -19,6 +21,9 @@ type IOC struct {
 	NoRegistration bool
 	// JWT params
 	SigningKey []byte
+	// Session params
+	AccessTokenExpirationTime  time.Duration
+	RefreshTokenExpirationTime time.Duration
 }
 
 // EchoEngine instantiates the wep server.
@@ -45,12 +50,16 @@ func EchoEngine(ctrl IOC) *echo.Echo {
 	// Router //
 	////////////
 
+	sessions := session.NewManager(
+		ctrl.Database,
+		ctrl.SigningKey,
+		ctrl.AccessTokenExpirationTime,
+		ctrl.RefreshTokenExpirationTime,
+	)
+
 	router := engine.Group("")
 	restricted := router.Group("")
-	restricted.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		SigningKey: ctrl.SigningKey,
-	}))
-	restricted.Use(middlewares.CurrentUser(ctrl.Database))
+	restricted.Use(middlewares.Session(sessions))
 
 	// generic handlers
 	//
