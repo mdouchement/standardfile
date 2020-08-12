@@ -10,6 +10,7 @@ import (
 	argon2 "github.com/mdouchement/simple-argon2"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/model"
+	"github.com/mdouchement/standardfile/internal/server/serializer"
 	"github.com/mdouchement/standardfile/internal/sferror"
 	"github.com/pkg/errors"
 )
@@ -24,6 +25,14 @@ type (
 	credentials struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
+	}
+
+	userParams struct {
+		Email                string `json:"email"`
+		RegistrationPassword string `json:"password"`
+		PasswordNonce        string `json:"pw_nonce"`
+		PasswordCost         int    `json:"pw_cost"`
+		Version              string `json:"version"`
 	}
 
 	updateAuth struct {
@@ -48,28 +57,27 @@ type (
 // Register handler is used to register the user.
 // https://standardfile.org/#api-auth
 func (h *auth) Register(c echo.Context) error {
-	user := model.NewUser()
-
 	// Filter params
-	if err := c.Bind(&user); err != nil {
+	var params userParams
+	if err := c.Bind(&params); err != nil {
 		return c.JSON(http.StatusUnauthorized, sferror.New("Could not get user's params."))
 	}
 
-	if user.Email == "" {
+	if params.Email == "" {
 		return c.JSON(http.StatusUnauthorized, sferror.New("No email provided."))
 	}
-	if user.RegistrationPassword == "" {
+	if params.RegistrationPassword == "" {
 		return c.JSON(http.StatusUnauthorized, sferror.New("No password provided."))
 	}
-	if user.PasswordNonce == "" {
+	if params.PasswordNonce == "" {
 		return c.JSON(http.StatusUnauthorized, sferror.New("No nonce provided."))
 	}
-	if user.PasswordCost <= 0 {
+	if params.PasswordCost <= 0 {
 		return c.JSON(http.StatusUnauthorized, sferror.New("No password cost provided."))
 	}
 
 	// Check if the email is free to use.
-	u, err := h.db.FindUserByMail(user.Email)
+	u, err := h.db.FindUserByMail(params.Email)
 	if err != nil && !h.db.IsNotFound(err) {
 		return errors.Wrap(err, "could not get access to database")
 	}
@@ -79,13 +87,21 @@ func (h *auth) Register(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, sferror.New("This email is already registered."))
 	}
 
+	// Initialize user
+	user := model.NewUser()
+	user.Email = params.Email
+	user.PasswordNonce = params.PasswordNonce
+	user.PasswordCost = params.PasswordCost
+	if params.Version != "" {
+		user.Version = params.Version
+	}
+
 	// Crypt password
-	user.Password, err = argon2.GenerateFromPasswordString(user.RegistrationPassword, argon2.Default)
+	user.Password, err = argon2.GenerateFromPasswordString(params.RegistrationPassword, argon2.Default)
 	if err != nil {
 		return errors.Wrap(err, "could not store user password safe")
 	}
 	user.PasswordUpdatedAt = time.Now().Unix()
-	user.RegistrationPassword = "" // Disable password rendering
 
 	// Persist the model
 	if err := h.db.Save(user); err != nil {
@@ -93,7 +109,7 @@ func (h *auth) Register(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"user":  user,
+		"user":  serializer.User(user),
 		"token": h.TokenFromUser(user),
 	})
 }
@@ -179,7 +195,7 @@ func (h *auth) Login(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"user":  user,
+		"user":  serializer.User(user),
 		"token": h.TokenFromUser(user),
 	})
 }
@@ -207,7 +223,7 @@ func (h *auth) Update(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"user":  user,
+		"user":  serializer.User(user),
 		"token": h.TokenFromUser(user),
 	})
 }
@@ -248,7 +264,7 @@ func (h *auth) UpdatePassword(c echo.Context) error {
 	}
 
 	// Crypt & update password
-	pw, err := argon2.GenerateFromPasswordString(user.RegistrationPassword, argon2.Default)
+	pw, err := argon2.GenerateFromPasswordString(params.NewPassword, argon2.Default)
 	if err != nil {
 		return errors.Wrap(err, "could not store user password safe")
 	}
@@ -263,7 +279,7 @@ func (h *auth) UpdatePassword(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"user":  user,
+		"user":  serializer.User(user),
 		"token": h.TokenFromUser(user),
 	})
 }
