@@ -179,7 +179,6 @@ func (v *vault) computeAuth(ak string) (string, error) {
 		return "", errors.Wrap(err, "could not decode AK")
 	}
 
-	// TODO replace v.version by v.params.version like SFJS ?
 	ciphertextToAuth := fmt.Sprintf("%s:%s:%s:%s", v.version, v.uuid, v.iv, v.ciphertext)
 
 	mac := hmac.New(sha256.New, dak)

@@ -64,7 +64,6 @@ func (c *client) GetAuthParams(email string) (Auth, error) {
 	req.Close = true
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
-	// req.Header.Add("Accept", "application/json") TODO GZIP ?
 
 	//
 	// Perform request

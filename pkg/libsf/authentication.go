@@ -20,8 +20,10 @@ var (
 type (
 	// An Auth holds all the params needed to create the credentials and cipher keys.
 	Auth interface {
-		// Emailo returns the email used for authentication.
+		// Email returns the email used for authentication.
 		Email() string
+		// Version returns the encryption scheme version.
+		Version() string
 		// IntegrityCheck checks if the Auth params are valid.
 		IntegrityCheck() error
 		// SymmetricKeyPair returns the password, master_key and auth_key for the given uip (plaintext password of the user).
@@ -39,6 +41,10 @@ type (
 
 func (a *auth) Email() string {
 	return a.FieldEmail
+}
+
+func (a *auth) Version() string {
+	return a.FieldVersion
 }
 
 func (a *auth) IntegrityCheck() error {
