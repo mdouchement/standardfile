@@ -108,7 +108,7 @@ func (s *syncService20190520) save() (saved []*model.Item, conflicts []*Conflict
 	for _, incomingItem := range s.Base.Params.Items {
 		incomingItem.UserID = s.Base.User.ID
 
-		serverItem, err := s.Base.db.FindItem(incomingItem.GetID())
+		serverItem, err := s.Base.db.FindItemByUserID(incomingItem.GetID(), s.Base.User.ID)
 		newRecord := s.Base.db.IsNotFound(err)
 		if err != nil && !newRecord {
 			// TODO: return an Internal Server Error?
