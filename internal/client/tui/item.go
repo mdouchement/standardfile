@@ -25,13 +25,13 @@ type Item struct {
 }
 
 // NewItem returns a new Item.
-func NewItem(item *libsf.Item, sync func(item *libsf.Item)) *Item {
+func NewItem(item *libsf.Item, sync func(item *libsf.Item) *time.Time) *Item {
 	editor := edit.New(edit.Options{Text: item.Note.Text})
 	debounced := debounce.New(500 * time.Millisecond)
 	editor.OnTextSet(gowid.WidgetCallback{Name: "cb", WidgetChangedFunction: func(app gowid.IApp, iw gowid.IWidget) {
 		debounced(func() {
 			item.Note.Text = editor.Text()
-			sync(item)
+			item.UpdatedAt = sync(item)
 		})
 	}})
 

@@ -22,6 +22,7 @@ type (
 	// A SyncItems is used when a client want to sync items.
 	SyncItems struct {
 		// Common fields
+		API              string `json:"api"` // Since 20190520
 		ComputeIntegrity bool   `json:"compute_integrity"`
 		Limit            int    `json:"limit"`
 		SyncToken        string `json:"sync_token"`
@@ -32,9 +33,9 @@ type (
 		Items []*Item `json:"items"`
 
 		// Fields used in response
-		Retrieved []*Item        `json:"retrieved_items"`
-		Saved     []*Item        `json:"saved_items"`
-		Unsaved   []*UnsavedItem `json:"unsaved"`
+		Retrieved []*Item         `json:"retrieved_items"`
+		Saved     []*Item         `json:"saved_items"`
+		Conflicts []*ConflictItem `json:"conflicts"`
 	}
 
 	// An Item holds all the data created by end user.
@@ -50,20 +51,18 @@ type (
 		Deleted          bool   `json:"deleted"`
 
 		// Internal
-		AuthParams Auth
+		AuthParams Auth  `json:"-"`
 		Note       *Note `json:"-"`
 
 		key     vault
 		content vault
 	}
 
-	// An UnsavedItem is an object containing an item that has not been saved.
-	UnsavedItem struct {
-		Item  Item `json:"item"`
-		Error struct {
-			Message string `json:"message"`
-			Tag     string `json:"tag"`
-		} `json:"error"`
+	// A ConflictItem is an object containing an item that can't be saved caused by conflicts.
+	ConflictItem struct {
+		UnsavedItem Item   `json:"unsaved_item,omitempty"`
+		ServerItem  Item   `json:"server_item,omitempty"`
+		Type        string `json:"type"`
 	}
 )
 
@@ -73,7 +72,7 @@ func NewSyncItems() SyncItems {
 		Items:     []*Item{},
 		Retrieved: []*Item{},
 		Saved:     []*Item{},
-		Unsaved:   []*UnsavedItem{},
+		Conflicts: []*ConflictItem{},
 	}
 }
 
@@ -146,6 +145,7 @@ func (i *Item) Unseal(mk, ak string) error {
 		return errors.Wrap(err, "EncryptedItemKey")
 	}
 	i.key = v
+	i.AuthParams = v.params // Set current auth params as default
 
 	ik, err := i.key.unseal(mk, ak)
 	if err != nil {

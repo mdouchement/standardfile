@@ -26,7 +26,7 @@ type (
 		IntegrityHash string          `json:"integrity_hash,omitempty"`
 	}
 
-	// An ConflictItem is an object containing an item that can't be saved caused by conflicts.
+	// A ConflictItem is an object containing an item that can't be saved caused by conflicts.
 	ConflictItem struct {
 		UnsavedItem *model.Item `json:"unsaved_item,omitempty"`
 		ServerItem  *model.Item `json:"server_item,omitempty"`
@@ -129,6 +129,7 @@ func (s *syncService20190520) save() (saved []*model.Item, conflicts []*Conflict
 			// But assuming a rogue client has gotten away with it,
 			// we should also conflict in this case if the difference between the dates is greater than MIN_CONFLICT_INTERVAL seconds.
 
+			// By default incoming should equal to server item (which is desired, healthy behavior)
 			saveIncoming := true
 			// SFJS did not send updated_at prior to 0.3.59 but applied by the database layer so the value is OK.
 			difference := incomingItem.UpdatedAt.Sub(*serverItem.UpdatedAt).Seconds()
@@ -140,9 +141,6 @@ func (s *syncService20190520) save() (saved []*model.Item, conflicts []*Conflict
 			case difference > 0:
 				// incoming is greater than server item. Should never be the case. If so though, don't save.
 				saveIncoming = math.Abs(difference) < minConflictInterval20190520
-			default:
-				// incoming is equal to server item (which is desired, healthy behavior), continue with saving.
-				saveIncoming = true
 			}
 
 			if !saveIncoming {
