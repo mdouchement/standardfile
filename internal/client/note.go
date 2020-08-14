@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/mdouchement/standardfile/internal/client/tui"
 	"github.com/mdouchement/standardfile/pkg/libsf"
@@ -91,10 +92,10 @@ func Note() error {
 	return nil
 }
 
-func initSynchronizer(client libsf.Client, cfg Config, ui *tui.TUI) func(item *libsf.Item) {
+func initSynchronizer(client libsf.Client, cfg Config, ui *tui.TUI) func(item *libsf.Item) *time.Time {
 	var mu sync.Mutex
 
-	return func(item *libsf.Item) {
+	return func(item *libsf.Item) *time.Time {
 		mu.Lock()
 		defer mu.Unlock()
 
@@ -104,7 +105,7 @@ func initSynchronizer(client libsf.Client, cfg Config, ui *tui.TUI) func(item *l
 		err := item.Seal(cfg.Mk, cfg.Ak)
 		if err != nil {
 			ui.DisplayStatus(errors.Wrap(err, "could not seal item").Error())
-			return
+			return item.UpdatedAt
 		}
 
 		items := libsf.NewSyncItems()
@@ -112,9 +113,16 @@ func initSynchronizer(client libsf.Client, cfg Config, ui *tui.TUI) func(item *l
 		items, err = client.SyncItems(items)
 		if err != nil {
 			ui.DisplayStatus(errors.Wrap(err, "could not get items").Error())
-			return
+			return item.UpdatedAt
+		}
+		if len(items.Conflicts) > 0 {
+			// Won't be addressed until we want several clients to run on the same account.
+			// The list refreshing is done by restarting the application.
+			panic("TODO: update the item proprely (item conflicts)")
 		}
 		ui.DisplayStatus("saved")
 		ui.SortItems() // Based on local updates. No resync with the remote server is done (single client usage)
+
+		return items.Saved[0].UpdatedAt
 	}
 }

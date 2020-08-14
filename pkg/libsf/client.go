@@ -10,6 +10,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// APIVersion it the version supported by this library.
+const APIVersion = "20190520"
+
 type (
 	// A Client defines all interactions that can be performed on a StandardFile server.
 	Client interface {
@@ -93,7 +96,7 @@ func (c *client) Login(email, password string) error {
 
 	//
 	// Build request
-	body, err := json.Marshal(p{"email": email, "password": password})
+	body, err := json.Marshal(p{"api": APIVersion, "email": email, "password": password})
 	if err != nil {
 		return errors.Wrap(err, "could not serialize email & password")
 	}
@@ -147,6 +150,7 @@ func (c *client) SyncItems(items SyncItems) (SyncItems, error) {
 
 	//
 	// Build request
+	items.API = APIVersion
 	body, err := json.Marshal(&items)
 	if err != nil {
 		return items, errors.Wrap(err, "could not serialize sync data")
