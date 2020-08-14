@@ -9,8 +9,12 @@ import (
 	"github.com/mdouchement/standardfile/internal/server/session"
 )
 
-// CurrentUserContextKey is the key to retrieve the current_user from echo.Context.
-const CurrentUserContextKey = "current_user"
+const (
+	// CurrentUserContextKey is the key to retrieve the current_user from echo.Context.
+	CurrentUserContextKey = "current_user"
+	// CurrentSessionContextKey is the key to retrieve the current_session from echo.Context.
+	CurrentSessionContextKey = "current_session"
+)
 
 // Session returns a Session auth middleware.
 // It also handle JWT tokens from previous API versions.
@@ -71,13 +75,20 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 				})
 			}
 
+			// Find, validate and store current_session for handlers.
+			session, err := m.Validate(token)
+			if err != nil {
+				return err
+			}
+			c.Set(CurrentSessionContextKey, session)
+
+			// Find and store current_user for handlers.
 			user, err := m.UserFromToken(token)
 			if err != nil {
 				return err
 			}
-
-			// Store current_user for handlers.
 			c.Set(CurrentUserContextKey, user)
+
 			return next(c)
 		}
 	}

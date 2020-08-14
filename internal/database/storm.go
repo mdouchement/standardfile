@@ -73,6 +73,11 @@ func (c *strm) Save(m model.Model) error {
 	return errors.Wrap(c.db.Save(m), "could not save the model")
 }
 
+// Delete deletes the entry in database with the given model.
+func (c *strm) Delete(m model.Model) error {
+	return errors.Wrap(c.db.DeleteStruct(m), "could not delete the model")
+}
+
 // Close the database.
 func (c *strm) Close() error {
 	return c.db.Close()
@@ -110,6 +115,16 @@ func (c *strm) FindSession(id string) (*model.Session, error) {
 	return &session, nil
 }
 
+// FindSessionsByUserID returns all sessions for the given id and user id.
+func (c *strm) FindSessionByUserID(id, userID string) (*model.Session, error) {
+	var session model.Session
+	err := c.db.Select(q.Eq("ID", id), q.Eq("UserID", userID)).First(&session)
+	if err != nil {
+		return nil, errors.Wrap(err, "find session by id and user id")
+	}
+	return &session, nil
+}
+
 // FindSessionByAccessToken returns the session for the given access token.
 func (c *strm) FindSessionByAccessToken(token string) (*model.Session, error) {
 	var session model.Session
@@ -119,12 +134,32 @@ func (c *strm) FindSessionByAccessToken(token string) (*model.Session, error) {
 	return &session, nil
 }
 
+// FindSessionByTokens returns the session for the given access and refresh token.
+func (c *strm) FindSessionByTokens(access, refresh string) (*model.Session, error) {
+	var session model.Session
+	err := c.db.Select(q.Eq("AccessToken", access), q.Eq("RefreshToken", refresh)).First(&session)
+	if err != nil {
+		return nil, errors.Wrap(err, "find session by tokens")
+	}
+	return &session, nil
+}
+
 // FindSessionsByUserID returns all the sessions for the given user id.
 func (c *strm) FindSessionsByUserID(userID string) ([]*model.Session, error) {
 	sessions := make([]*model.Session, 0)
-	err := c.db.Select(q.Eq("UserID", userID), q.Gt("ExpireAt", time.Now())).OrderBy("UpdatedAt").Find(&sessions)
+	err := c.db.Select(q.Eq("UserID", userID)).OrderBy("CreatedAt").Find(&sessions)
 	if err != nil && !c.IsNotFound(err) {
-		return nil, errors.Wrap(err, "could not find sessions")
+		return nil, errors.Wrap(err, "could not find sessions by user id")
+	}
+	return sessions, nil
+}
+
+// FindActiveSessionsByUserID returns all active sessions for the given user id.
+func (c *strm) FindActiveSessionsByUserID(userID string) ([]*model.Session, error) {
+	sessions := make([]*model.Session, 0)
+	err := c.db.Select(q.Eq("UserID", userID), q.Gt("ExpireAt", time.Now())).OrderBy("CreatedAt").Find(&sessions)
+	if err != nil && !c.IsNotFound(err) {
+		return nil, errors.Wrap(err, "could not find sessions by user id")
 	}
 	return sessions, nil
 }

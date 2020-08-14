@@ -85,6 +85,23 @@ func EchoEngine(ctrl IOC) *echo.Echo {
 	restricted.POST("/auth/change_pw", auth.UpdatePassword)
 
 	//
+	// session handlers
+	//
+	session := &sess{
+		db: ctrl.Database,
+		m: session.NewManager(
+			ctrl.Database,
+			ctrl.SigningKey,
+			ctrl.AccessTokenExpirationTime,
+			ctrl.RefreshTokenExpirationTime,
+		),
+	}
+	restricted.POST("/session/refresh", session.Refresh)
+	restricted.GET("/sessions", session.List)
+	restricted.DELETE("/session", session.Delete)
+	restricted.DELETE("/session/all", session.DeleteAll)
+
+	//
 	// item handlers
 	//
 	item := &item{
@@ -123,6 +140,14 @@ func currentUser(c echo.Context) *model.User {
 	user, ok := c.Get(middlewares.CurrentUserContextKey).(*model.User)
 	if ok {
 		return user
+	}
+	return nil
+}
+
+func currentSession(c echo.Context) *model.Session {
+	session, ok := c.Get(middlewares.CurrentSessionContextKey).(*model.Session)
+	if ok {
+		return session
 	}
 	return nil
 }

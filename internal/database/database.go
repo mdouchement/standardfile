@@ -11,6 +11,8 @@ type (
 	Client interface {
 		// Save inserts or updates the entry in database with the given model.
 		Save(m model.Model) error
+		// Delete deletes the entry in database with the given model.
+		Delete(m model.Model) error
 		// Close the database.
 		Close() error
 		// IsNotFound returns true if err is nil or a not found error.
@@ -33,10 +35,16 @@ type (
 	SessionInteraction interface {
 		// FindSession returns the session for the given id (UUID).
 		FindSession(id string) (*model.Session, error)
+		// FindSessionsByUserID returns all sessions for the given id and user id.
+		FindSessionByUserID(id, userID string) (*model.Session, error)
+		// FindActiveSessionsByUserID returns all active sessions for the given user id.
+		FindActiveSessionsByUserID(userID string) ([]*model.Session, error)
+		// FindSessionsByUserID returns all sessions for the given user id.
+		FindSessionsByUserID(userID string) ([]*model.Session, error)
 		// FindSessionByAccessToken returns the session for the given access token.
 		FindSessionByAccessToken(token string) (*model.Session, error)
-		// FindSessionsByUserID returns all the sessions for the given user id.
-		FindSessionsByUserID(userID string) ([]*model.Session, error)
+		// FindSessionByTokens returns the session for the given access and refresh token.
+		FindSessionByTokens(access, refresh string) (*model.Session, error)
 	}
 
 	// An ItemInteraction defines all the methods used to interact with a item record(s).

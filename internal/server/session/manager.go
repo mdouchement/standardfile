@@ -16,6 +16,13 @@ type (
 	// A Manager manages sessions.
 	Manager interface {
 		JWTSigningKey() []byte
+		// Validate validates an access token.
+		Validate(token string) (*model.Session, error)
+		// AccessTokenExprireAt returns the expiration date of the access token.
+		AccessTokenExprireAt(session *model.Session) time.Time
+		// Regenerate regenerates the session's tokens.
+		Regenerate(session *model.Session) error
+		// UserFromToken the user for the given token.
 		UserFromToken(token interface{}) (*model.User, error)
 	}
 
@@ -43,14 +50,7 @@ func (m *manager) JWTSigningKey() []byte {
 	return m.signingKey
 }
 
-func (m *manager) UserFromToken(token interface{}) (*model.User, error) {
-	if jwt, ok := token.(*jwt.Token); ok {
-		return m.JWT(jwt)
-	}
-	return m.SessionToken(token.(string))
-}
-
-func (m *manager) SessionToken(token string) (*model.User, error) {
+func (m *manager) Validate(token string) (*model.Session, error) {
 	session, err := m.db.FindSessionByAccessToken(token)
 	if err != nil {
 		if m.db.IsNotFound(err) {
@@ -64,16 +64,48 @@ func (m *manager) SessionToken(token string) (*model.User, error) {
 	}
 
 	// Validate session.
-	now := time.Now()
-	if session.ExpireAt.After(now) {
+	if m.isSessionExpired(session) {
 		return nil, sferror.NewWithTagCode(sferror.StatusExpiredAccessToken, "invalid-auth", "Invalid login credentials.")
 	}
 
-	expireAt := session.ExpireAt.
-		Add(-m.refreshTokenExpirationTime).
-		Add(m.accessTokenExpirationTime)
-	if expireAt.After(now) {
+	if m.isAccessTokenExpired(session) {
 		return nil, sferror.NewWithTagCode(sferror.StatusExpiredAccessToken, "expired-access-token", "The provided access token has expired.")
+	}
+
+	return session, nil
+}
+
+func (m *manager) AccessTokenExprireAt(session *model.Session) time.Time {
+	return session.ExpireAt.Add(-m.refreshTokenExpirationTime).Add(m.accessTokenExpirationTime)
+}
+
+func (m *manager) Regenerate(session *model.Session) error {
+	if m.isSessionExpired(session) {
+		return sferror.NewWithTagCode(
+			http.StatusBadRequest,
+			"expired-refresh-token",
+			"The refresh token has expired.",
+		)
+	}
+
+	session.AccessToken = SecureToken(24)
+	session.RefreshToken = SecureToken(24)
+	session.ExpireAt = time.Now().Add(m.refreshTokenExpirationTime)
+
+	return errors.Wrap(m.db.Save(session), "could not save session after refreshing session")
+}
+
+func (m *manager) UserFromToken(token interface{}) (*model.User, error) {
+	if jwt, ok := token.(*jwt.Token); ok {
+		return m.JWT(jwt)
+	}
+	return m.SessionToken(token.(string))
+}
+
+func (m *manager) SessionToken(token string) (*model.User, error) {
+	session, err := m.Validate(token)
+	if err != nil {
+		return nil, err
 	}
 
 	// Get current_user.
@@ -127,4 +159,12 @@ func (m *manager) JWT(token *jwt.Token) (*model.User, error) {
 	}
 
 	return user, nil
+}
+
+func (m *manager) isSessionExpired(session *model.Session) bool {
+	return session.ExpireAt.After(time.Now())
+}
+
+func (m *manager) isAccessTokenExpired(session *model.Session) bool {
+	return m.AccessTokenExprireAt(session).After(time.Now())
 }
