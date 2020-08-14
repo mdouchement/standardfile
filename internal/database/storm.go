@@ -110,6 +110,13 @@ func (c *strm) FindItem(id string) (*model.Item, error) {
 	return &item, nil
 }
 
+// FindItemByUserID returns the item for the given id and user id (UUID).
+func (c *strm) FindItemByUserID(id, userID string) (*model.Item, error) {
+	var item model.Item
+	err := c.db.Select(q.Eq("ID", id), q.Eq("UserID", userID)).First(&item)
+	return &item, errors.Wrap(err, "could not find item by user id")
+}
+
 // FindItemsByParams returns all the matching records for the given parameters.
 // It also returns a boolean to true if there is more items than the given limit.
 func (c *strm) FindItemsByParams(userID, contentType string, updated time.Time, strictTime, noDeleted bool, limit int) ([]*model.Item, bool, error) {
