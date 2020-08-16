@@ -10,8 +10,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// APIVersion it the version supported by this library.
-const APIVersion = "20190520"
+const (
+	// APIVersion20161215 allows to use the API version 20161215.
+	APIVersion20161215 = "20161215"
+	// APIVersion20190520 allows to use the API version 20190520.
+	APIVersion20190520 = "20190520"
+
+	// APIVersion is the version used by default client.
+	APIVersion = APIVersion20190520
+)
 
 type (
 	// A Client defines all interactions that can be performed on a StandardFile server.
@@ -30,21 +37,22 @@ type (
 
 	p      map[string]interface{}
 	client struct {
-		http     *http.Client
-		endpoint string
-		bearer   string
+		http       *http.Client
+		apiversion string
+		endpoint   string
+		bearer     string
 	}
 )
 
 // NewDefaultClient returns a new Client with default HTTP client.
 func NewDefaultClient(endpoint string) (Client, error) {
-	return NewClient(http.DefaultClient, endpoint)
+	return NewClient(http.DefaultClient, APIVersion, endpoint)
 }
 
 // NewClient returns a new Client.
-func NewClient(c *http.Client, endpoint string) (Client, error) {
+func NewClient(c *http.Client, apiversion string, endpoint string) (Client, error) {
 	_, err := url.Parse(endpoint)
-	return &client{endpoint: endpoint, http: c}, errors.Wrap(err, "could not parse endpoint")
+	return &client{apiversion: apiversion, endpoint: endpoint, http: c}, errors.Wrap(err, "could not parse endpoint")
 }
 
 func (c *client) GetAuthParams(email string) (Auth, error) {
@@ -96,7 +104,7 @@ func (c *client) Login(email, password string) error {
 
 	//
 	// Build request
-	body, err := json.Marshal(p{"api": APIVersion, "email": email, "password": password})
+	body, err := json.Marshal(p{"api": c.apiversion, "email": email, "password": password})
 	if err != nil {
 		return errors.Wrap(err, "could not serialize email & password")
 	}
@@ -150,7 +158,7 @@ func (c *client) SyncItems(items SyncItems) (SyncItems, error) {
 
 	//
 	// Build request
-	items.API = APIVersion
+	items.API = c.apiversion
 	body, err := json.Marshal(&items)
 	if err != nil {
 		return items, errors.Wrap(err, "could not serialize sync data")
