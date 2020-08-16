@@ -51,8 +51,8 @@ func Note() error {
 	}
 	defer ui.Cleanup()
 
+	// No sync_token and limit are setted to get all items.
 	items := libsf.NewSyncItems()
-	items.Limit = 10000 // TODO: make it dynamic by adding a config menu persisted in the `.standardfile`
 	items, err = client.SyncItems(items)
 	if err != nil {
 		return errors.Wrap(err, "could not get items")

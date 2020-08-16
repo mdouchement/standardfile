@@ -182,6 +182,7 @@ func (c *strm) FindItemByUserID(id, userID string) (*model.Item, error) {
 
 // FindItemsByParams returns all the matching records for the given parameters.
 // It also returns a boolean to true if there is more items than the given limit.
+// limit equals to 0 means all items.
 func (c *strm) FindItemsByParams(userID, contentType string, updated time.Time, strictTime, noDeleted bool, limit int) ([]*model.Item, bool, error) {
 	query := []q.Matcher{q.Eq("UserID", userID)}
 
@@ -202,13 +203,17 @@ func (c *strm) FindItemsByParams(userID, contentType string, updated time.Time, 
 	}
 
 	items := make([]*model.Item, 0)
-	err := c.db.Select(query...).OrderBy("UpdatedAt").Reverse().Limit(limit + 1).Find(&items)
+	stmt := c.db.Select(query...).OrderBy("UpdatedAt").Reverse()
+	if limit > 0 {
+		stmt = stmt.Limit(limit + 1)
+	}
+	err := stmt.Find(&items)
 	if err != nil && !c.IsNotFound(err) {
 		return nil, false, errors.Wrap(err, "could not find items")
 	}
 
 	var overLimit bool
-	if len(items) > limit {
+	if limit != 0 && len(items) > limit {
 		items = items[:limit]
 		overLimit = true
 	}

@@ -55,6 +55,7 @@ type (
 		FindItemByUserID(id, userID string) (*model.Item, error)
 		// FindItemsByParams returns all the matching records for the given parameters.
 		// It also returns a boolean to true if there is more items than the given limit.
+		// limit equals to 0 means all items.
 		FindItemsByParams(userID, contentType string, updated time.Time, strictTime, filterDeleted bool, limit int) ([]*model.Item, bool, error)
 		// FindItemsForIntegrityCheck returns valid items for computing data signature forthe given user.
 		FindItemsForIntegrityCheck(userID string) ([]*model.Item, error)
