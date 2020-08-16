@@ -33,8 +33,13 @@ type (
 		Items []*Item `json:"items"`
 
 		// Fields used in response
-		Retrieved []*Item         `json:"retrieved_items"`
-		Saved     []*Item         `json:"saved_items"`
+		Retrieved []*Item `json:"retrieved_items"`
+		Saved     []*Item `json:"saved_items"`
+
+		// 20161215 fields
+		Unsaved []*UnsavedItem `json:"unsaved"`
+
+		// 20190520 fields
 		Conflicts []*ConflictItem `json:"conflicts"`
 	}
 
@@ -58,7 +63,18 @@ type (
 		content vault
 	}
 
+	// An UnsavedItem is an object containing an item that has not been saved.
+	// Used before API version 20190520.
+	UnsavedItem struct {
+		Item  Item `json:"item"`
+		Error struct {
+			Message string `json:"message"`
+			Tag     string `json:"tag"`
+		} `json:"error"`
+	}
+
 	// A ConflictItem is an object containing an item that can't be saved caused by conflicts.
+	// Used since API version 20190520.
 	ConflictItem struct {
 		UnsavedItem Item   `json:"unsaved_item,omitempty"`
 		ServerItem  Item   `json:"server_item,omitempty"`
@@ -72,6 +88,7 @@ func NewSyncItems() SyncItems {
 		Items:     []*Item{},
 		Retrieved: []*Item{},
 		Saved:     []*Item{},
+		Unsaved:   []*UnsavedItem{},
 		Conflicts: []*ConflictItem{},
 	}
 }
