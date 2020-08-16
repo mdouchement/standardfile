@@ -1,6 +1,6 @@
 module github.com/mdouchement/standardfile
 
-go 1.12
+go 1.14
 
 require (
 	github.com/appleboy/gofight v2.0.0+incompatible

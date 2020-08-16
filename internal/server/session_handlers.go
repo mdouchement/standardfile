@@ -13,8 +13,8 @@ import (
 
 type (
 	sess struct {
-		m  session.Manager
-		db database.Client
+		db       database.Client
+		sessions session.Manager
 	}
 
 	refreshSessionParams struct {
@@ -71,7 +71,7 @@ func (s *sess) Refresh(c echo.Context) error {
 		return errors.Wrap(err, "could not get refresh session")
 	}
 
-	if err = s.m.Regenerate(session); err != nil {
+	if err = s.sessions.Regenerate(session); err != nil {
 		return c.JSON(http.StatusBadRequest, sferror.NewWithTagCode(
 			http.StatusBadRequest,
 			"expired-refresh-token",
@@ -81,7 +81,7 @@ func (s *sess) Refresh(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"session": echo.Map{
-			"expire_at":     s.m.AccessTokenExprireAt(session),
+			"expire_at":     s.sessions.AccessTokenExprireAt(session),
 			"refresh_token": session.RefreshToken,
 			"valid_until":   session.ExpireAt,
 		},

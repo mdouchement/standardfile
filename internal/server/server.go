@@ -73,8 +73,8 @@ func EchoEngine(ctrl IOC) *echo.Echo {
 	// auth handlers
 	//
 	auth := &auth{
-		db:         ctrl.Database,
-		signingKey: ctrl.SigningKey,
+		db:       ctrl.Database,
+		sessions: sessions,
 	}
 	if !ctrl.NoRegistration {
 		router.POST("/auth", auth.Register)
@@ -88,13 +88,8 @@ func EchoEngine(ctrl IOC) *echo.Echo {
 	// session handlers
 	//
 	session := &sess{
-		db: ctrl.Database,
-		m: session.NewManager(
-			ctrl.Database,
-			ctrl.SigningKey,
-			ctrl.AccessTokenExpirationTime,
-			ctrl.RefreshTokenExpirationTime,
-		),
+		db:       ctrl.Database,
+		sessions: sessions,
 	}
 	restricted.POST("/session/refresh", session.Refresh)
 	restricted.GET("/sessions", session.List)
