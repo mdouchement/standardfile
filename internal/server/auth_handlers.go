@@ -163,6 +163,23 @@ func (h *auth) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, login)
 }
 
+///// Logout
+////
+//
+
+// Logout used for terminates the current session.
+func (h *auth) Logout(c echo.Context) error {
+	session := currentSession(c)
+	if session != nil {
+		err := h.db.Delete(session)
+		if err != nil && h.db.IsNotFound(err) {
+			return err
+		}
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
 ///// Update
 ////
 //

@@ -81,6 +81,7 @@ func EchoEngine(ctrl IOC) *echo.Echo {
 	}
 	router.GET("/auth/params", auth.Params) // Used for sign_in
 	router.POST("/auth/sign_in", auth.Login)
+	restricted.POST("/auth/sign_out", auth.Logout)
 	restricted.POST("/auth/update", auth.Update)
 	restricted.POST("/auth/change_pw", auth.UpdatePassword)
 

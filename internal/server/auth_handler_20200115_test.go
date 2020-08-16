@@ -199,6 +199,33 @@ func TestRequestLogin20200115(t *testing.T) {
 	})
 }
 
+func TestRequestLogout20200115(t *testing.T) {
+	engine, ioc, r, cleanup := setup()
+	defer cleanup()
+
+	_, session := createUserWithSession(ioc)
+
+	//
+
+	r.POST("/auth/sign_out").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
+	})
+
+	header := gofight.H{
+		"Authorization": "Bearer " + session.AccessToken,
+	}
+
+	r.POST("/auth/sign_out").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusNoContent, r.Code)
+	})
+
+	r.POST("/auth/sign_out").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
+	})
+}
+
 func TestRequestUpdate20200115(t *testing.T) {
 	engine, ioc, r, cleanup := setup()
 	defer cleanup()

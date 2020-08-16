@@ -166,6 +166,33 @@ func TestRequestLogin20161215(t *testing.T) {
 	})
 }
 
+func TestRequestLogout20161215(t *testing.T) {
+	engine, ioc, r, cleanup := setup()
+	defer cleanup()
+
+	user := createUser(ioc)
+
+	//
+
+	r.POST("/auth/sign_out").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
+	})
+
+	header := gofight.H{
+		"Authorization": "Bearer " + server.CreateJWT(ioc, user),
+	}
+
+	r.POST("/auth/sign_out").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusNoContent, r.Code)
+	})
+
+	// Sign out is only for sessions, so with a JWT we are still logged.
+	r.POST("/auth/sign_out").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusNoContent, r.Code)
+	})
+}
+
 func TestRequestUpdate20161215(t *testing.T) {
 	engine, ioc, r, cleanup := setup()
 	defer cleanup()
