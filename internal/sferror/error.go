@@ -8,7 +8,7 @@ const StatusExpiredAccessToken = 498
 type (
 	// An SFError represents the error format that can be rendered by stnadardfile server.
 	SFError struct {
-		httpCode   int
+		HTTPCode   int `json:"-"`
 		FieldError err `json:"error"`
 	}
 
@@ -21,7 +21,7 @@ type (
 // StatusCode returns the HTTP status code.
 func StatusCode(err error) int {
 	if sferr, ok := err.(*SFError); ok {
-		return sferr.httpCode
+		return sferr.HTTPCode
 	}
 	return http.StatusInternalServerError
 }
@@ -33,7 +33,7 @@ func New(message string) *SFError {
 
 // NewWithTagCode returns a new SFError with the given code, tag and message.
 func NewWithTagCode(code int, tag, message string) *SFError {
-	return &SFError{FieldError: err{Tag: tag, Message: message}}
+	return &SFError{HTTPCode: code, FieldError: err{Tag: tag, Message: message}}
 }
 
 // Error implements error interface.

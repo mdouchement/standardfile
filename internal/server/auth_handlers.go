@@ -62,6 +62,7 @@ func (h *auth) Register(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, sferror.New("Could not get user's params."))
 	}
 	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
 
 	if params.Email == "" {
 		return c.JSON(http.StatusUnauthorized, sferror.New("No email provided."))
@@ -141,12 +142,13 @@ func (h *auth) Login(c echo.Context) error {
 	var params service.LoginParams
 	if err := c.Bind(&params); err != nil {
 		log.Println("Could not get parameters:", err)
-		return c.JSON(http.StatusUnauthorized, sferror.New("Could not get credentials."))
+		return c.JSON(http.StatusBadRequest, sferror.New("Could not get credentials."))
 	}
 	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
 
 	if params.Email == "" || params.Password == "" {
-		return c.JSON(http.StatusUnauthorized, sferror.New("No email or password provided."))
+		return c.JSON(http.StatusBadRequest, sferror.New("No email or password provided."))
 	}
 
 	// TODO 2FA
@@ -174,6 +176,7 @@ func (h *auth) Update(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, sferror.New("Could not get parameters."))
 	}
 	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
 
 	service := service.NewUser(h.db, h.sessions, params.APIVersion)
 	update, err := service.Update(currentUser(c), params)
@@ -198,6 +201,7 @@ func (h *auth) UpdatePassword(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, sferror.New("Could not get parameters."))
 	}
 	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
 
 	// Check CurrentPassword presence.
 	if params.CurrentPassword == "" {

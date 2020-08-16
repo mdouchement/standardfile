@@ -1,21 +1,27 @@
 package server
 
 import (
+	"log"
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
 	"github.com/mdouchement/standardfile/internal/model"
-	"github.com/mdouchement/standardfile/internal/server/session"
 )
 
 // This file is only for test purpose and is only loaded by test framework.
 
-// TokenFromUser returns JWT tokens.
-func TokenFromUser(ctrl IOC, u *model.User) string {
-	sessions := session.NewManager(
-		ctrl.Database,
-		ctrl.SigningKey,
-		ctrl.AccessTokenExpirationTime,
-		ctrl.RefreshTokenExpirationTime,
-	)
+// CreateJWT returns a JWT token.
+func CreateJWT(ctrl IOC, u *model.User) string {
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["user_uuid"] = u.ID
+	// claims["pw_hash"] = fmt.Sprintf("%x", sha256.Sum256([]byte(u.Password))) // See readme
+	claims["iss"] = "github.com/mdouchement/standardfile"
+	claims["iat"] = time.Now().Unix() // Unix Timestamp in seconds
 
-	a := &auth{sessions: sessions}
-	return "a.TokenFromUser(u)"
+	t, err := token.SignedString(ctrl.SigningKey)
+	if err != nil {
+		log.Fatalf("could not generate token: %s", err)
+	}
+	return t
 }

@@ -27,6 +27,7 @@ func (h *item) Sync(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, sferror.New("Could not get syncing params."))
 	}
 	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
 
 	sync := service.NewSync(h.db, currentUser(c), params)
 	if err := sync.Execute(); err != nil {

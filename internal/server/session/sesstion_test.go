@@ -23,15 +23,3 @@ func TestUserSupportsSessions(t *testing.T) {
 	u.Version = "004"
 	assert.True(t, session.UserSupportsSessions(u))
 }
-
-func TestUserUpgradingToSessions(t *testing.T) {
-	u := &model.User{Version: "003"}
-	assert.False(t, session.UserUpgradingToSessions(u, "003"))
-
-	assert.True(t, session.UserUpgradingToSessions(u, "004"))
-
-	u.Version = "004"
-	assert.False(t, session.UserUpgradingToSessions(u, "003"))
-
-	assert.True(t, session.UserUpgradingToSessions(u, "004"))
-}

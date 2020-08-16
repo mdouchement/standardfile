@@ -6,8 +6,8 @@ import "github.com/mdouchement/standardfile/internal/model"
 func User(m *model.User) map[string]interface{} {
 	r := map[string]interface{}{
 		"uuid":       m.ID,
-		"created_at": m.CreatedAt,
-		"updated_at": m.UpdatedAt,
+		"created_at": m.CreatedAt.UTC(),
+		"updated_at": m.UpdatedAt.UTC(),
 		"email":      m.Email,
 		"version":    m.Version,
 		"pw_cost":    m.PasswordCost,
@@ -18,6 +18,8 @@ func User(m *model.User) map[string]interface{} {
 		r["pw_salt"] = m.PasswordSalt
 		r["pw_auth"] = m.PasswordAuth
 	case model.Version3:
+		fallthrough
+	case model.Version4:
 		r["pw_nonce"] = m.PasswordNonce
 	}
 

@@ -81,9 +81,9 @@ func (s *sess) Refresh(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"session": echo.Map{
-			"expire_at":     s.sessions.AccessTokenExprireAt(session),
+			"expire_at":     s.sessions.AccessTokenExprireAt(session).UTC(),
 			"refresh_token": session.RefreshToken,
-			"valid_until":   session.ExpireAt,
+			"valid_until":   session.ExpireAt.UTC(),
 		},
 		"token": session.AccessToken,
 	})

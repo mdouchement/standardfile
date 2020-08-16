@@ -1,7 +1,6 @@
 package session_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/mdouchement/standardfile/internal/server/session"
@@ -11,7 +10,7 @@ import (
 func TestSecureToken(t *testing.T) {
 	assert.Panics(t, func() { session.SecureToken(-1) })
 	assert.Len(t, session.SecureToken(24), 24)
-	assert.Regexp(t, regexp.MustCompile(`^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$`), session.SecureToken(24))
+	assert.Regexp(t, `^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$`, session.SecureToken(24))
 
 	n := 8192
 	h := make(map[string]bool, 0)

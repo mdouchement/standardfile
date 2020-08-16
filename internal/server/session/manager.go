@@ -16,6 +16,8 @@ type (
 	// A Manager manages sessions.
 	Manager interface {
 		JWTSigningKey() []byte
+		// Generate creates a new session without user information.
+		Generate() *model.Session
 		// Validate validates an access token.
 		Validate(token string) (*model.Session, error)
 		// AccessTokenExprireAt returns the expiration date of the access token.
@@ -50,6 +52,14 @@ func (m *manager) JWTSigningKey() []byte {
 	return m.signingKey
 }
 
+func (m *manager) Generate() *model.Session {
+	return &model.Session{
+		ExpireAt:     time.Now().Add(m.refreshTokenExpirationTime).UTC(),
+		AccessToken:  SecureToken(24),
+		RefreshToken: SecureToken(24),
+	}
+}
+
 func (m *manager) Validate(token string) (*model.Session, error) {
 	session, err := m.db.FindSessionByAccessToken(token)
 	if err != nil {
@@ -65,7 +75,7 @@ func (m *manager) Validate(token string) (*model.Session, error) {
 
 	// Validate session.
 	if m.isSessionExpired(session) {
-		return nil, sferror.NewWithTagCode(sferror.StatusExpiredAccessToken, "invalid-auth", "Invalid login credentials.")
+		return nil, sferror.NewWithTagCode(http.StatusUnauthorized, "invalid-auth", "Invalid login credentials.")
 	}
 
 	if m.isAccessTokenExpired(session) {
@@ -162,9 +172,9 @@ func (m *manager) JWT(token *jwt.Token) (*model.User, error) {
 }
 
 func (m *manager) isSessionExpired(session *model.Session) bool {
-	return session.ExpireAt.After(time.Now())
+	return session.ExpireAt.Before(time.Now())
 }
 
 func (m *manager) isAccessTokenExpired(session *model.Session) bool {
-	return m.AccessTokenExprireAt(session).After(time.Now())
+	return m.AccessTokenExprireAt(session).Before(time.Now())
 }
