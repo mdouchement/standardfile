@@ -13,6 +13,7 @@ import (
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server"
+	"github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,10 +51,12 @@ func setup() (engine *echo.Echo, ioc server.IOC, r *gofight.RequestConfig, clean
 	}
 
 	ioc = server.IOC{
-		Version:        "test",
-		Database:       db,
-		NoRegistration: false,
-		SigningKey:     []byte("secret"),
+		Version:                    "test",
+		Database:                   db,
+		NoRegistration:             false,
+		SigningKey:                 []byte("secret"),
+		AccessTokenExpirationTime:  60 * 24 * time.Hour,
+		RefreshTokenExpirationTime: 365 * 24 * time.Hour,
 	}
 	engine = server.EchoEngine(ioc)
 
@@ -85,4 +88,38 @@ func createUser(ioc server.IOC) *model.User {
 	}
 
 	return user
+}
+
+func createUserWithSession(ioc server.IOC) (*model.User, *model.Session) {
+	var err error
+
+	user := model.NewUser()
+	user.Email = "george.abitbol@nowhere.lan"
+	user.Version = model.Version4
+	user.Password, err = argon2.GenerateFromPasswordString("password42", argon2.Default)
+	user.PasswordCost = 110000
+	user.PasswordNonce = "nonce42"
+	user.PasswordUpdatedAt = time.Now().Add(-12 * time.Hour).Unix()
+	if err != nil {
+		panic(err)
+	}
+	err = ioc.Database.Save(user)
+	if err != nil {
+		panic(err)
+	}
+
+	session := &model.Session{
+		APIVersion:   "20200115",
+		UserAgent:    "Go-http-client/1.1",
+		UserID:       user.ID,
+		ExpireAt:     time.Now().Add(ioc.RefreshTokenExpirationTime).UTC(),
+		AccessToken:  session.SecureToken(24),
+		RefreshToken: session.SecureToken(24),
+	}
+	err = ioc.Database.Save(session)
+	if err != nil {
+		panic(err)
+	}
+
+	return user, session
 }

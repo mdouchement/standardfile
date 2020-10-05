@@ -11,12 +11,15 @@ type (
 	Client interface {
 		// Save inserts or updates the entry in database with the given model.
 		Save(m model.Model) error
+		// Delete deletes the entry in database with the given model.
+		Delete(m model.Model) error
 		// Close the database.
 		Close() error
 		// IsNotFound returns true if err is nil or a not found error.
 		IsNotFound(err error) bool
 
 		UserInteraction
+		SessionInteraction
 		ItemInteraction
 	}
 
@@ -28,6 +31,22 @@ type (
 		FindUserByMail(email string) (*model.User, error)
 	}
 
+	// An SessionInteraction defines all the methods used to interact with a session record.
+	SessionInteraction interface {
+		// FindSession returns the session for the given id (UUID).
+		FindSession(id string) (*model.Session, error)
+		// FindSessionsByUserID returns all sessions for the given id and user id.
+		FindSessionByUserID(id, userID string) (*model.Session, error)
+		// FindActiveSessionsByUserID returns all active sessions for the given user id.
+		FindActiveSessionsByUserID(userID string) ([]*model.Session, error)
+		// FindSessionsByUserID returns all sessions for the given user id.
+		FindSessionsByUserID(userID string) ([]*model.Session, error)
+		// FindSessionByAccessToken returns the session for the given access token.
+		FindSessionByAccessToken(token string) (*model.Session, error)
+		// FindSessionByTokens returns the session for the given access and refresh token.
+		FindSessionByTokens(access, refresh string) (*model.Session, error)
+	}
+
 	// An ItemInteraction defines all the methods used to interact with a item record(s).
 	ItemInteraction interface {
 		// FindItem returns the item for the given id (UUID).
@@ -36,6 +55,7 @@ type (
 		FindItemByUserID(id, userID string) (*model.Item, error)
 		// FindItemsByParams returns all the matching records for the given parameters.
 		// It also returns a boolean to true if there is more items than the given limit.
+		// limit equals to 0 means all items.
 		FindItemsByParams(userID, contentType string, updated time.Time, strictTime, filterDeleted bool, limit int) ([]*model.Item, bool, error)
 		// FindItemsForIntegrityCheck returns valid items for computing data signature forthe given user.
 		FindItemsForIntegrityCheck(userID string) ([]*model.Item, error)

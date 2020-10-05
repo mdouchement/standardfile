@@ -1,22 +1,28 @@
 package server_test
 
 import (
+	"crypto/sha256"
+	"encoding/json"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/appleboy/gofight"
-	"github.com/mdouchement/standardfile/internal/server"
+	"github.com/labstack/echo/v4"
+	"github.com/mdouchement/standardfile/internal/server/session"
+	"github.com/mdouchement/standardfile/internal/sferror"
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fastjson"
 )
 
-func TestRequestRegistration(t *testing.T) {
-	engine, _, r, cleanup := setup()
+func TestRequestRegistration20200115(t *testing.T) {
+	engine, ioc, r, cleanup := setup()
 	defer cleanup()
 
 	params := gofight.D{
-		"version": "003",
+		"api":     "20200115",
+		"version": "004",
 	}
 	r.POST("/auth").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
@@ -48,14 +54,28 @@ func TestRequestRegistration(t *testing.T) {
 		v, err := fastjson.Parse(r.Body.String())
 		assert.NoError(t, err)
 
-		assert.Regexp(t, `.*\..*\..*`, string(v.Get("token").GetStringBytes()))
+		assert.Regexp(t, `^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$`, string(v.Get("token").GetStringBytes()))
+		//
 		assert.Equal(t, params["version"], string(v.Get("user", "version").GetStringBytes()))
 		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
 		assert.Equal(t, params["email"], string(v.Get("user", "email").GetStringBytes()))
 		assert.Equal(t, params["pw_nonce"], string(v.Get("user", "pw_nonce").GetStringBytes()))
 		assert.Equal(t, params["pw_cost"], v.Get("user", "pw_cost").GetInt())
+		//
+		assert.Regexp(t, `^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$`, string(v.Get("session", "refresh_token").GetStringBytes()))
 
-		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("user", "created_at").GetStringBytes()))
+		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "expire_at").GetStringBytes()))
+		assert.NoError(t, err)
+		assert.InEpsilon(t, time.Now().Add(ioc.AccessTokenExpirationTime).UnixNano(), timestamp.UnixNano(), 500)
+
+		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "valid_until").GetStringBytes()))
+		assert.NoError(t, err)
+		assert.InEpsilon(t, time.Now().Add(ioc.RefreshTokenExpirationTime).UnixNano(), timestamp.UnixNano(), 500)
+
+		//
+		//
+
+		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("user", "created_at").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.Less(t, time.Since(timestamp).Nanoseconds(), (500 * time.Millisecond).Nanoseconds())
 
@@ -70,7 +90,7 @@ func TestRequestRegistration(t *testing.T) {
 	})
 }
 
-func TestRequestParams(t *testing.T) {
+func TestRequestParams20200115(t *testing.T) {
 	engine, ioc, r, cleanup := setup()
 	defer cleanup()
 
@@ -80,8 +100,22 @@ func TestRequestParams(t *testing.T) {
 	})
 
 	r.GET("/auth/params?email=nobody@nowhere.lan").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.JSONEq(t, `{"error":{"message":"Bad email provided."}}`, r.Body.String())
+		assert.Equal(t, http.StatusOK, r.Code)
+
+		hostname, err := os.Hostname()
+		assert.NoError(t, err)
+
+		params := echo.Map{
+			"identifier": "nobody@nowhere.lan",
+			"pw_cost":    110_000,
+			"nonce":      sha256.Sum256([]byte("nobody@nowhere.lan" + hostname)),
+			"version":    "004",
+		}
+
+		payload, err := json.Marshal(params)
+		assert.NoError(t, err)
+
+		assert.JSONEq(t, string(payload), r.Body.String())
 	})
 
 	createUser(ioc)
@@ -92,29 +126,32 @@ func TestRequestParams(t *testing.T) {
 	})
 }
 
-func TestRequestLogin(t *testing.T) {
+func TestRequestLogin20200115(t *testing.T) {
 	engine, ioc, r, cleanup := setup()
 	defer cleanup()
-	user := createUser(ioc)
+
+	sessions := session.NewManager(ioc.Database, ioc.SigningKey, ioc.AccessTokenExpirationTime, ioc.RefreshTokenExpirationTime)
+	user, session := createUserWithSession(ioc)
 
 	r.POST("/auth/sign_in").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.Equal(t, http.StatusBadRequest, r.Code)
 		assert.JSONEq(t, `{"error":{"message":"Could not get credentials."}}`, r.Body.String())
 	})
 
 	params := gofight.D{
+		"api":      "20200115",
 		"email":    "",
 		"password": "",
 	}
 
 	r.POST("/auth/sign_in").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.Equal(t, http.StatusBadRequest, r.Code)
 		assert.JSONEq(t, `{"error":{"message":"No email or password provided."}}`, r.Body.String())
 	})
 
 	params["email"] = "george.abitbol@nowhere.lan"
 	r.POST("/auth/sign_in").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.Equal(t, http.StatusBadRequest, r.Code)
 		assert.JSONEq(t, `{"error":{"message":"No email or password provided."}}`, r.Body.String())
 	})
 
@@ -125,14 +162,28 @@ func TestRequestLogin(t *testing.T) {
 		v, err := fastjson.Parse(r.Body.String())
 		assert.NoError(t, err)
 
-		assert.Regexp(t, `.*\..*\..*`, string(v.Get("token").GetStringBytes()))
+		assert.Regexp(t, `^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$`, string(v.Get("token").GetStringBytes()))
+		//
 		assert.Equal(t, user.Version, string(v.Get("user", "version").GetStringBytes()))
 		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
 		assert.Equal(t, user.Email, string(v.Get("user", "email").GetStringBytes()))
 		assert.Equal(t, user.PasswordNonce, string(v.Get("user", "pw_nonce").GetStringBytes()))
 		assert.Equal(t, user.PasswordCost, v.Get("user", "pw_cost").GetInt())
+		//
+		assert.Regexp(t, `^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$`, string(v.Get("session", "refresh_token").GetStringBytes()))
 
-		timestamp, err := time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
+		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "expire_at").GetStringBytes()))
+		assert.NoError(t, err)
+		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano(), timestamp.UnixNano(), 1000)
+
+		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "valid_until").GetStringBytes()))
+		assert.NoError(t, err)
+		assert.InEpsilon(t, session.ExpireAt.UnixNano(), timestamp.UnixNano(), 1000)
+
+		//
+		//
+
+		timestamp, err = time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.Equal(t, user.CreatedAt.UTC(), timestamp.UTC())
 
@@ -148,20 +199,49 @@ func TestRequestLogin(t *testing.T) {
 	})
 }
 
-func TestRequestUpdate(t *testing.T) {
+func TestRequestLogout20200115(t *testing.T) {
+	engine, ioc, r, cleanup := setup()
+	defer cleanup()
+
+	_, session := createUserWithSession(ioc)
+
+	//
+
+	r.POST("/auth/sign_out").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
+	})
+
+	header := gofight.H{
+		"Authorization": "Bearer " + session.AccessToken,
+	}
+
+	r.POST("/auth/sign_out").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusNoContent, r.Code)
+	})
+
+	r.POST("/auth/sign_out").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
+	})
+}
+
+func TestRequestUpdate20200115(t *testing.T) {
 	engine, ioc, r, cleanup := setup()
 	defer cleanup()
 
 	r.POST("/auth/update").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusBadRequest, r.Code)
-		assert.JSONEq(t, `{"error":{"message":"missing or malformed jwt"}}`, r.Body.String())
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
 	})
 
-	user := createUser(ioc)
+	sessions := session.NewManager(ioc.Database, ioc.SigningKey, ioc.AccessTokenExpirationTime, ioc.RefreshTokenExpirationTime)
+	user, session := createUserWithSession(ioc)
 	header := gofight.H{
-		"Authorization": "Bearer " + server.TokenFromUser(ioc, user),
+		"Authorization": "Bearer " + session.AccessToken,
 	}
 	params := gofight.D{
+		"api":     "20200115",
 		"pw_cost": user.PasswordCost * 2,
 	}
 
@@ -171,14 +251,28 @@ func TestRequestUpdate(t *testing.T) {
 		v, err := fastjson.Parse(r.Body.String())
 		assert.NoError(t, err)
 
-		assert.Equal(t, server.TokenFromUser(ioc, user), string(v.Get("token").GetStringBytes()))
+		assert.Equal(t, session.AccessToken, string(v.Get("token").GetStringBytes()))
+		//
 		assert.Equal(t, user.Version, string(v.Get("user", "version").GetStringBytes()))
 		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
 		assert.Equal(t, user.Email, string(v.Get("user", "email").GetStringBytes()))
 		assert.Equal(t, user.PasswordNonce, string(v.Get("user", "pw_nonce").GetStringBytes()))
 		assert.Equal(t, user.PasswordCost*2, v.Get("user", "pw_cost").GetInt())
+		//
+		assert.Equal(t, session.RefreshToken, string(v.Get("session", "refresh_token").GetStringBytes()))
 
-		timestamp, err := time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
+		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "expire_at").GetStringBytes()))
+		assert.NoError(t, err)
+		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano(), timestamp.UnixNano(), 1000)
+
+		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "valid_until").GetStringBytes()))
+		assert.NoError(t, err)
+		assert.InEpsilon(t, session.ExpireAt.UnixNano(), timestamp.UnixNano(), 1000)
+
+		//
+		//
+
+		timestamp, err = time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.Equal(t, user.CreatedAt.UTC(), timestamp.UTC())
 
@@ -186,22 +280,46 @@ func TestRequestUpdate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.WithinDuration(t, user.UpdatedAt.UTC(), timestamp.UTC(), 2*time.Second)
 	})
+
+	//
+
+	session.ExpireAt = time.Now()
+	err := ioc.Database.Save(session)
+	assert.NoError(t, err)
+
+	r.POST("/auth/update").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
+	})
+
+	//
+
+	session.ExpireAt = time.Now().Add(time.Hour)
+	err = ioc.Database.Save(session)
+	assert.NoError(t, err)
+
+	r.POST("/auth/update").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, sferror.StatusExpiredAccessToken, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"expired-access-token","message":"The provided access token has expired."}}`, r.Body.String())
+	})
 }
 
-func TestRequestUpdatePassword(t *testing.T) {
+func TestRequestUpdatePassword20200115(t *testing.T) {
 	engine, ioc, r, cleanup := setup()
 	defer cleanup()
 
 	r.POST("/auth/change_pw").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusBadRequest, r.Code)
-		assert.JSONEq(t, `{"error":{"message":"missing or malformed jwt"}}`, r.Body.String())
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
 	})
 
-	user := createUser(ioc)
+	sessions := session.NewManager(ioc.Database, ioc.SigningKey, ioc.AccessTokenExpirationTime, ioc.RefreshTokenExpirationTime)
+	user, session := createUserWithSession(ioc)
 	header := gofight.H{
-		"Authorization": "Bearer " + server.TokenFromUser(ioc, user),
+		"Authorization": "Bearer " + session.AccessToken,
 	}
 	params := gofight.D{
+		"api":        "20200115",
 		"identifier": user.Email,
 	}
 
@@ -222,7 +340,7 @@ func TestRequestUpdatePassword(t *testing.T) {
 		assert.JSONEq(t, `{"error":{"message":"The current password you entered is incorrect. Please try again."}}`, r.Body.String())
 	})
 
-	time.Sleep(time.Second) // Ensure claim["iat"] is older than 1s
+	time.Sleep(time.Second) // Ensure session issued at is older than 1s
 
 	params["current_password"] = "password42"
 	r.POST("/auth/change_pw").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
@@ -234,14 +352,27 @@ func TestRequestUpdatePassword(t *testing.T) {
 		user, err = ioc.Database.FindUser(user.ID) // reload user
 		assert.NoError(t, err)
 
-		assert.Equal(t, server.TokenFromUser(ioc, user), string(v.Get("token").GetStringBytes()))
+		assert.Equal(t, session.AccessToken, string(v.Get("token").GetStringBytes()))
+		//
 		assert.Equal(t, user.Version, string(v.Get("user", "version").GetStringBytes()))
 		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
 		assert.Equal(t, user.Email, string(v.Get("user", "email").GetStringBytes()))
 		assert.Equal(t, user.PasswordNonce, string(v.Get("user", "pw_nonce").GetStringBytes()))
 		assert.Equal(t, user.PasswordCost, v.Get("user", "pw_cost").GetInt())
+		assert.Equal(t, session.RefreshToken, string(v.Get("session", "refresh_token").GetStringBytes()))
 
-		timestamp, err := time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
+		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "expire_at").GetStringBytes()))
+		assert.NoError(t, err)
+		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano(), timestamp.UnixNano(), 1000)
+
+		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "valid_until").GetStringBytes()))
+		assert.NoError(t, err)
+		assert.InEpsilon(t, session.ExpireAt.UnixNano(), timestamp.UnixNano(), 1000)
+
+		//
+		//
+
+		timestamp, err = time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.Equal(t, user.CreatedAt.UTC(), timestamp.UTC())
 
@@ -252,6 +383,6 @@ func TestRequestUpdatePassword(t *testing.T) {
 
 	r.POST("/auth/change_pw").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.JSONEq(t, `{"error":{"message":"Revoked token.","tag":"invalid-auth"}}`, r.Body.String())
+		assert.JSONEq(t, `{"error":{"message":"The current password you entered is incorrect. Please try again."}}`, r.Body.String())
 	})
 }

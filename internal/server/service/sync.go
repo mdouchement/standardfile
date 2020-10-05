@@ -15,7 +15,7 @@ import (
 type (
 	// A SyncParams is used when a client want to sync items.
 	SyncParams struct {
-		API              string        `json:"api"` // Since 20190520
+		Params
 		ComputeIntegrity bool          `json:"compute_integrity"`
 		Limit            int           `json:"limit"`
 		SyncToken        string        `json:"sync_token"`
@@ -44,7 +44,9 @@ type (
 
 // NewSync instantiates a new Sync service.
 func NewSync(db database.Client, user *model.User, params SyncParams) (s SyncService) {
-	switch params.API {
+	switch params.APIVersion {
+	case "20200115":
+		fallthrough
 	case "20190520":
 		s = &syncService20190520{
 			Base: &syncServiceBase{
@@ -53,6 +55,8 @@ func NewSync(db database.Client, user *model.User, params SyncParams) (s SyncSer
 				Params: params,
 			},
 		}
+	case "20161215":
+		fallthrough
 	default:
 		s = &syncService20161215{
 			Base: &syncServiceBase{
@@ -69,8 +73,10 @@ func NewSync(db database.Client, user *model.User, params SyncParams) (s SyncSer
 // Get
 //
 func (s *syncServiceBase) get() ([]*model.Item, bool, error) {
-	if s.Params.Limit == 0 {
-		s.Params.Limit = 100000
+	if s.Params.SyncToken == "" {
+		// If it's the first sync request, front-load all exisitng items keys
+		// so that the client can decrypt incoming items without having to wait.
+		s.Params.Limit = 0
 	}
 
 	var (

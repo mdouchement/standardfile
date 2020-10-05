@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server/middlewares"
+	"github.com/mdouchement/standardfile/internal/server/session"
 )
 
 // An IOC is an Iversion Of Control pattern used to init the server package.
@@ -19,6 +21,9 @@ type IOC struct {
 	NoRegistration bool
 	// JWT params
 	SigningKey []byte
+	// Session params
+	AccessTokenExpirationTime  time.Duration
+	RefreshTokenExpirationTime time.Duration
 }
 
 // EchoEngine instantiates the wep server.
@@ -45,12 +50,16 @@ func EchoEngine(ctrl IOC) *echo.Echo {
 	// Router //
 	////////////
 
+	sessions := session.NewManager(
+		ctrl.Database,
+		ctrl.SigningKey,
+		ctrl.AccessTokenExpirationTime,
+		ctrl.RefreshTokenExpirationTime,
+	)
+
 	router := engine.Group("")
 	restricted := router.Group("")
-	restricted.Use(middleware.JWTWithConfig(middleware.JWTConfig{
-		SigningKey: ctrl.SigningKey,
-	}))
-	restricted.Use(middlewares.CurrentUser(ctrl.Database))
+	restricted.Use(middlewares.Session(sessions))
 
 	// generic handlers
 	//
@@ -64,16 +73,29 @@ func EchoEngine(ctrl IOC) *echo.Echo {
 	// auth handlers
 	//
 	auth := &auth{
-		db:         ctrl.Database,
-		signingKey: ctrl.SigningKey,
+		db:       ctrl.Database,
+		sessions: sessions,
 	}
 	if !ctrl.NoRegistration {
 		router.POST("/auth", auth.Register)
 	}
 	router.GET("/auth/params", auth.Params) // Used for sign_in
 	router.POST("/auth/sign_in", auth.Login)
+	restricted.POST("/auth/sign_out", auth.Logout)
 	restricted.POST("/auth/update", auth.Update)
 	restricted.POST("/auth/change_pw", auth.UpdatePassword)
+
+	//
+	// session handlers
+	//
+	session := &sess{
+		db:       ctrl.Database,
+		sessions: sessions,
+	}
+	restricted.POST("/session/refresh", session.Refresh)
+	restricted.GET("/sessions", session.List)
+	restricted.DELETE("/session", session.Delete)
+	restricted.DELETE("/session/all", session.DeleteAll)
 
 	//
 	// item handlers
@@ -114,6 +136,14 @@ func currentUser(c echo.Context) *model.User {
 	user, ok := c.Get(middlewares.CurrentUserContextKey).(*model.User)
 	if ok {
 		return user
+	}
+	return nil
+}
+
+func currentSession(c echo.Context) *model.Session {
+	session, ok := c.Get(middlewares.CurrentSessionContextKey).(*model.Session)
+	if ok {
+		return session
 	}
 	return nil
 }

@@ -5,11 +5,13 @@ const (
 	Version2 = "002"
 	// Version3 is the client version.
 	Version3 = "003"
+	// Version4 is the client version.
+	Version4 = "004"
 	// VersionLatest is the client version.
 	VersionLatest = Version3
 )
 
-// A User represents a database record and the rendered API response.
+// A User represents a database record.
 type User struct {
 	Base `msgpack:",inline" storm:"inline"`
 
