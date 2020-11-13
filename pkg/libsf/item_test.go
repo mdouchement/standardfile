@@ -21,6 +21,7 @@ func TestItem_Seal(t *testing.T) {
 			Text:  "The text",
 		},
 		// Internal stuff
+		Version:    "003",
 		AuthParams: libsf.NewAuth("george.abitbol@nowhere.lan", "003", "nonce", 420000),
 	}
 
@@ -79,6 +80,7 @@ func TestItem_SealUnseal(t *testing.T) {
 		Deleted:     false,
 		Note:        note,
 		// Internal stuff
+		Version:    "003",
 		AuthParams: libsf.NewAuth("george.abitbol@nowhere.lan", "003", "nonce", 420000),
 	}
 

@@ -32,7 +32,7 @@ func parse(secret, id string) (vault, error) {
 	v := vault{}
 
 	components := strings.Split(secret, ":")
-	if len(components) != 6 {
+	if len(components) < 5 || len(components) > 6 {
 		return v, errors.New("invalid secret format")
 	}
 
@@ -50,22 +50,28 @@ func parse(secret, id string) (vault, error) {
 	v.iv = components[3]
 	v.ciphertext = components[4]
 
-	params, err := base64.StdEncoding.DecodeString(components[5])
-	if err != nil {
-		return v, errors.Wrap(err, "could not decode params")
-	}
+	if len(components) == 6 {
+		params, err := base64.StdEncoding.DecodeString(components[5])
+		if err != nil {
+			return v, errors.Wrap(err, "could not decode params")
+		}
 
-	var a auth
-	err = json.Unmarshal(params, &a)
-	if err != nil {
-		return v, errors.Wrap(err, "could not parse params")
+		var a auth
+		err = json.Unmarshal(params, &a)
+		if err != nil {
+			return v, errors.Wrap(err, "could not parse params")
+		}
+		v.params = &a
 	}
-	v.params = &a
 
 	return v, nil
 }
 
 func serialize(v vault) (string, error) {
+	if v.params == nil {
+		return fmt.Sprintf("%s:%s:%s:%s:%s", v.version, v.auth, v.uuid, v.iv, v.ciphertext), nil
+	}
+
 	a, err := json.Marshal(v.params)
 	if err != nil {
 		return "", errors.Wrap(err, "could not serialize params")
