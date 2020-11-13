@@ -16,7 +16,7 @@ const minConflictInterval20190520 = 1.0 // in second
 type (
 	// A syncService20190520 is a service used for syncing items.
 	syncService20190520 struct {
-		Base *syncServiceBase
+		Base *syncServiceBase `json:"-"`
 		// Populated during `Execute()`
 		Retrieved     []*model.Item   `json:"retrieved_items"`
 		Saved         []*model.Item   `json:"saved_items"`
