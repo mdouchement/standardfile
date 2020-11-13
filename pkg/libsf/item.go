@@ -56,8 +56,9 @@ type (
 		Deleted          bool   `json:"deleted"`
 
 		// Internal
-		AuthParams Auth  `json:"-"`
-		Note       *Note `json:"-"`
+		Version    string `json:"-"`
+		AuthParams Auth   `json:"-"`
+		Note       *Note  `json:"-"`
 
 		key     vault
 		content vault
@@ -104,7 +105,7 @@ func (i *Item) Seal(mk, ak string) error {
 		return errors.Wrap(err, "could not generate encryption key")
 	}
 	i.key = vault{
-		version: i.AuthParams.Version(),
+		version: i.Version,
 		uuid:    i.ID,
 		params:  i.AuthParams,
 	}
@@ -133,7 +134,7 @@ func (i *Item) Seal(mk, ak string) error {
 	}
 
 	i.content = vault{
-		version: i.AuthParams.Version(),
+		version: i.Version,
 		uuid:    i.ID,
 		params:  i.AuthParams,
 	}
@@ -162,6 +163,7 @@ func (i *Item) Unseal(mk, ak string) error {
 		return errors.Wrap(err, "EncryptedItemKey")
 	}
 	i.key = v
+	i.Version = v.version
 	i.AuthParams = v.params // Set current auth params as default
 
 	ik, err := i.key.unseal(mk, ak)
