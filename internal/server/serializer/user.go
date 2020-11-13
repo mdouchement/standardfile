@@ -1,6 +1,9 @@
 package serializer
 
-import "github.com/mdouchement/standardfile/internal/model"
+import (
+	"github.com/mdouchement/standardfile/internal/model"
+	"github.com/mdouchement/standardfile/pkg/libsf"
+)
 
 // User serializes the render of a user.
 func User(m *model.User) map[string]interface{} {
@@ -14,12 +17,12 @@ func User(m *model.User) map[string]interface{} {
 	}
 
 	switch m.Version {
-	case model.Version2:
+	case libsf.ProtocolVersion2:
 		r["pw_salt"] = m.PasswordSalt
 		r["pw_auth"] = m.PasswordAuth
-	case model.Version3:
+	case libsf.ProtocolVersion3:
 		fallthrough
-	case model.Version4:
+	case libsf.ProtocolVersion4:
 		r["pw_nonce"] = m.PasswordNonce
 	}
 

@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -72,11 +73,11 @@ func TestRequestSessionList(t *testing.T) {
 }
 
 type SessionRefresh struct {
-	Token   string `json:"token"`
 	Session struct {
-		ExpireAt     time.Time `json:"expire_at"`
-		RefreshToken string    `json:"refresh_token"`
-		ValidUntil   time.Time `json:"valid_until"`
+		AccessToken       string    `json:"access_token"`
+		RefreshToken      string    `json:"refresh_token"`
+		AccessExpiration  time.Time `json:"access_expiration"`
+		RefreshExpiration time.Time `json:"refresh_expiration"`
 	} `json:"session"`
 }
 
@@ -119,14 +120,16 @@ func TestRequestSessionRegenerate(t *testing.T) {
 		err := json.Unmarshal(r.Body.Bytes(), &refresh)
 		assert.NoError(t, err)
 
-		assert.NotEmpty(t, refresh.Token)
-		assert.NotEqual(t, session.AccessToken, refresh.Token)
+		fmt.Println(r.Body.String())
+
+		assert.NotEmpty(t, refresh.Session.AccessToken)
+		assert.NotEqual(t, session.AccessToken, refresh.Session.AccessToken)
 		assert.NotEmpty(t, refresh.Session.RefreshToken)
 		assert.NotEqual(t, session.RefreshToken, refresh.Session.RefreshToken)
 
-		assert.Greater(t, refresh.Session.ValidUntil.UnixNano(), session.ExpireAt.UnixNano())
+		assert.Greater(t, refresh.Session.RefreshExpiration.UnixNano(), session.ExpireAt.UnixNano())
 		assert.InEpsilon(t, session.CreatedAt.UnixNano(), session.ExpireAt.Add(-ioc.RefreshTokenExpirationTime).UnixNano(), 1000)
-		assert.Greater(t, refresh.Session.ExpireAt.UnixNano(), sessions.AccessTokenExprireAt(session).UnixNano())
+		assert.Greater(t, refresh.Session.AccessExpiration.UnixNano(), sessions.AccessTokenExprireAt(session).UnixNano())
 		assert.InEpsilon(t, session.CreatedAt.UnixNano(), sessions.AccessTokenExprireAt(session).Add(-ioc.AccessTokenExpirationTime).UnixNano(), 1000)
 	})
 }

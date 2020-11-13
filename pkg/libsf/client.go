@@ -10,16 +10,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	// APIVersion20161215 allows to use the API version 20161215.
-	APIVersion20161215 = "20161215"
-	// APIVersion20190520 allows to use the API version 20190520.
-	APIVersion20190520 = "20190520"
-
-	// APIVersion is the version used by default client.
-	APIVersion = APIVersion20190520
-)
-
 type (
 	// A Client defines all interactions that can be performed on a StandardFile server.
 	Client interface {

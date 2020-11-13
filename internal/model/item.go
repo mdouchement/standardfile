@@ -5,6 +5,7 @@ type Item struct {
 	Base `msgpack:",inline" storm:"inline"`
 
 	UserID           string `json:"user_uuid"    msgpack:"user_id"      storm:"index"`
+	ItemsKeyID       string `json:"items_key_id"  msgpack:"items_key_id"`
 	Content          string `json:"content"      msgpack:"content"`
 	ContentType      string `json:"content_type" msgpack:"content_type" storm:"index"`
 	EncryptedItemKey string `json:"enc_item_key" msgpack:"enc_item_key"`

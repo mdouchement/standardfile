@@ -8,46 +8,17 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/database"
-	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server/service"
 	"github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/internal/sferror"
+	"github.com/mdouchement/standardfile/pkg/libsf"
 )
 
-type (
-	// auth contains all authentication handlers.
-	auth struct {
-		db       database.Client
-		sessions session.Manager
-	}
-
-	credentials struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	userParams struct {
-		Email                string `json:"email"`
-		RegistrationPassword string `json:"password"`
-		PasswordNonce        string `json:"pw_nonce"`
-		PasswordCost         int    `json:"pw_cost"`
-		Version              string `json:"version"`
-	}
-
-	updateAuth struct {
-		PasswordCost  int    `json:"pw_cost"`
-		PasswordNonce string `json:"pw_nonce"`
-		PasswordSalt  string `json:"pw_salt"`
-		Version       string `json:"version"`
-	}
-
-	updatePassword struct {
-		updateAuth
-		Identifier      string `json:"identifier"`
-		CurrentPassword string `json:"current_password"`
-		NewPassword     string `json:"new_password"`
-	}
-)
+// auth contains all authentication handlers.
+type auth struct {
+	db       database.Client
+	sessions session.Manager
+}
 
 ///// Register
 ////
@@ -73,7 +44,7 @@ func (h *auth) Register(c echo.Context) error {
 	if params.PasswordNonce == "" {
 		return c.JSON(http.StatusUnauthorized, sferror.New("No nonce provided."))
 	}
-	if params.PasswordCost <= 0 {
+	if libsf.VersionLesser(libsf.APIVersion20200115, params.APIVersion) && params.PasswordCost <= 0 {
 		return c.JSON(http.StatusUnauthorized, sferror.New("No password cost provided."))
 	}
 
@@ -105,9 +76,8 @@ func (h *auth) Params(c echo.Context) error {
 		hostname, _ := os.Hostname()
 		return c.JSON(http.StatusOK, echo.Map{
 			"identifier": email,
-			"pw_cost":    110_000,
 			"nonce":      sha256.Sum256([]byte(email + hostname)),
-			"version":    "004",
+			"version":    libsf.ProtocolVersion4,
 		})
 	}
 
@@ -117,14 +87,17 @@ func (h *auth) Params(c echo.Context) error {
 	// Render
 	params := echo.Map{
 		"identifier": user.Email,
-		"pw_cost":    user.PasswordCost,
 		"version":    user.Version,
 	}
 
 	switch user.Version {
-	case model.Version2:
+	case libsf.ProtocolVersion2:
+		params["pw_cost"] = user.PasswordCost
 		params["pw_salt"] = user.PasswordSalt
-	case model.Version3:
+	case libsf.ProtocolVersion3:
+		params["pw_cost"] = user.PasswordCost
+		params["pw_nonce"] = user.PasswordNonce
+	case libsf.ProtocolVersion4:
 		params["pw_nonce"] = user.PasswordNonce
 	}
 

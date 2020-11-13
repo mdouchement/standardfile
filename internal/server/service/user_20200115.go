@@ -27,8 +27,11 @@ func (s *userService20200115) Update(user *model.User, params UpdateUserParams) 
 }
 
 func (s *userService20200115) Password(user *model.User, params UpdatePasswordParams) (Render, error) {
-	// FIXME: Reference implementation added a restrictive condition
+	// FIXME: Reference implementation adds a restrictive condition
 	// https://github.com/standardnotes/syncing-server/pull/56/files#diff-21301a75c96c49e2bf016f4c63206521R12
+
+	// FIXME: Reference implementation adds key_params in the response but it works without providing key_params.
+	// https://github.com/standardnotes/syncing-server/pull/111/files
 	return s.password(user, params, s.SuccessfulAuthentication)
 }
 
@@ -49,11 +52,11 @@ func (s *userService20200115) SuccessfulAuthentication(u *model.User, params Par
 	return echo.Map{
 		"user": serializer.User(u),
 		"session": echo.Map{
-			"expire_at":     s.sessions.AccessTokenExprireAt(session).UTC(),
-			"refresh_token": session.RefreshToken,
-			"valid_until":   session.ExpireAt.UTC(),
+			"access_token":       session.AccessToken,
+			"refresh_token":      session.RefreshToken,
+			"access_expiration":  s.sessions.AccessTokenExprireAt(session).UTC(),
+			"refresh_expiration": session.ExpireAt.UTC(),
 		},
-		"token": session.AccessToken,
 	}, nil
 }
 

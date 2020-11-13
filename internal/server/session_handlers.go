@@ -81,11 +81,11 @@ func (s *sess) Refresh(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"session": echo.Map{
-			"expire_at":     s.sessions.AccessTokenExprireAt(session).UTC(),
-			"refresh_token": session.RefreshToken,
-			"valid_until":   session.ExpireAt.UTC(),
+			"access_token":       session.AccessToken,
+			"refresh_token":      session.RefreshToken,
+			"access_expiration":  s.sessions.AccessTokenExprireAt(session).UTC(),
+			"refresh_expiration": session.ExpireAt.UTC(),
 		},
-		"token": session.AccessToken,
 	})
 }
 

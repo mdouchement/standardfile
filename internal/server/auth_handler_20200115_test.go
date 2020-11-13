@@ -12,6 +12,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/internal/sferror"
+	"github.com/mdouchement/standardfile/pkg/libsf"
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fastjson"
 )
@@ -21,8 +22,8 @@ func TestRequestRegistration20200115(t *testing.T) {
 	defer cleanup()
 
 	params := gofight.D{
-		"api":     "20200115",
-		"version": "004",
+		"api":     libsf.APIVersion20200115,
+		"version": libsf.ProtocolVersion4,
 	}
 	r.POST("/auth").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
@@ -43,32 +44,26 @@ func TestRequestRegistration20200115(t *testing.T) {
 
 	params["pw_nonce"] = "nonce42"
 	r.POST("/auth").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.JSONEq(t, `{"error":{"message":"No password cost provided."}}`, r.Body.String())
-	})
-
-	params["pw_cost"] = 110000
-	r.POST("/auth").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusOK, r.Code)
 
 		v, err := fastjson.Parse(r.Body.String())
 		assert.NoError(t, err)
 
-		assert.Regexp(t, `^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$`, string(v.Get("token").GetStringBytes()))
 		//
 		assert.Equal(t, params["version"], string(v.Get("user", "version").GetStringBytes()))
 		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
 		assert.Equal(t, params["email"], string(v.Get("user", "email").GetStringBytes()))
 		assert.Equal(t, params["pw_nonce"], string(v.Get("user", "pw_nonce").GetStringBytes()))
-		assert.Equal(t, params["pw_cost"], v.Get("user", "pw_cost").GetInt())
+		assert.Equal(t, 0, v.Get("user", "pw_cost").GetInt())
 		//
+		assert.Regexp(t, `^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$`, string(v.Get("session", "access_token").GetStringBytes()))
 		assert.Regexp(t, `^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$`, string(v.Get("session", "refresh_token").GetStringBytes()))
 
-		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "expire_at").GetStringBytes()))
+		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "access_expiration").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.InEpsilon(t, time.Now().Add(ioc.AccessTokenExpirationTime).UnixNano(), timestamp.UnixNano(), 500)
 
-		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "valid_until").GetStringBytes()))
+		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "refresh_expiration").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.InEpsilon(t, time.Now().Add(ioc.RefreshTokenExpirationTime).UnixNano(), timestamp.UnixNano(), 500)
 
@@ -107,9 +102,8 @@ func TestRequestParams20200115(t *testing.T) {
 
 		params := echo.Map{
 			"identifier": "nobody@nowhere.lan",
-			"pw_cost":    110_000,
 			"nonce":      sha256.Sum256([]byte("nobody@nowhere.lan" + hostname)),
-			"version":    "004",
+			"version":    libsf.ProtocolVersion4,
 		}
 
 		payload, err := json.Marshal(params)
@@ -139,7 +133,7 @@ func TestRequestLogin20200115(t *testing.T) {
 	})
 
 	params := gofight.D{
-		"api":      "20200115",
+		"api":      libsf.APIVersion20200115,
 		"email":    "",
 		"password": "",
 	}
@@ -162,7 +156,6 @@ func TestRequestLogin20200115(t *testing.T) {
 		v, err := fastjson.Parse(r.Body.String())
 		assert.NoError(t, err)
 
-		assert.Regexp(t, `^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$`, string(v.Get("token").GetStringBytes()))
 		//
 		assert.Equal(t, user.Version, string(v.Get("user", "version").GetStringBytes()))
 		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
@@ -170,13 +163,14 @@ func TestRequestLogin20200115(t *testing.T) {
 		assert.Equal(t, user.PasswordNonce, string(v.Get("user", "pw_nonce").GetStringBytes()))
 		assert.Equal(t, user.PasswordCost, v.Get("user", "pw_cost").GetInt())
 		//
+		assert.Regexp(t, `^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$`, string(v.Get("session", "access_token").GetStringBytes()))
 		assert.Regexp(t, `^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$`, string(v.Get("session", "refresh_token").GetStringBytes()))
 
-		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "expire_at").GetStringBytes()))
+		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "access_expiration").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano(), timestamp.UnixNano(), 1000)
 
-		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "valid_until").GetStringBytes()))
+		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "refresh_expiration").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.InEpsilon(t, session.ExpireAt.UnixNano(), timestamp.UnixNano(), 1000)
 
@@ -241,7 +235,7 @@ func TestRequestUpdate20200115(t *testing.T) {
 		"Authorization": "Bearer " + session.AccessToken,
 	}
 	params := gofight.D{
-		"api":     "20200115",
+		"api":     libsf.APIVersion20200115,
 		"pw_cost": user.PasswordCost * 2,
 	}
 
@@ -251,7 +245,6 @@ func TestRequestUpdate20200115(t *testing.T) {
 		v, err := fastjson.Parse(r.Body.String())
 		assert.NoError(t, err)
 
-		assert.Equal(t, session.AccessToken, string(v.Get("token").GetStringBytes()))
 		//
 		assert.Equal(t, user.Version, string(v.Get("user", "version").GetStringBytes()))
 		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
@@ -259,13 +252,14 @@ func TestRequestUpdate20200115(t *testing.T) {
 		assert.Equal(t, user.PasswordNonce, string(v.Get("user", "pw_nonce").GetStringBytes()))
 		assert.Equal(t, user.PasswordCost*2, v.Get("user", "pw_cost").GetInt())
 		//
+		assert.Equal(t, session.AccessToken, string(v.Get("session", "access_token").GetStringBytes()))
 		assert.Equal(t, session.RefreshToken, string(v.Get("session", "refresh_token").GetStringBytes()))
 
-		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "expire_at").GetStringBytes()))
+		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "access_expiration").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano(), timestamp.UnixNano(), 1000)
 
-		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "valid_until").GetStringBytes()))
+		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "refresh_expiration").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.InEpsilon(t, session.ExpireAt.UnixNano(), timestamp.UnixNano(), 1000)
 
@@ -319,7 +313,7 @@ func TestRequestUpdatePassword20200115(t *testing.T) {
 		"Authorization": "Bearer " + session.AccessToken,
 	}
 	params := gofight.D{
-		"api":        "20200115",
+		"api":        libsf.APIVersion20200115,
 		"identifier": user.Email,
 	}
 
@@ -352,20 +346,21 @@ func TestRequestUpdatePassword20200115(t *testing.T) {
 		user, err = ioc.Database.FindUser(user.ID) // reload user
 		assert.NoError(t, err)
 
-		assert.Equal(t, session.AccessToken, string(v.Get("token").GetStringBytes()))
 		//
 		assert.Equal(t, user.Version, string(v.Get("user", "version").GetStringBytes()))
 		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
 		assert.Equal(t, user.Email, string(v.Get("user", "email").GetStringBytes()))
 		assert.Equal(t, user.PasswordNonce, string(v.Get("user", "pw_nonce").GetStringBytes()))
 		assert.Equal(t, user.PasswordCost, v.Get("user", "pw_cost").GetInt())
+		//
+		assert.Equal(t, session.AccessToken, string(v.Get("session", "access_token").GetStringBytes()))
 		assert.Equal(t, session.RefreshToken, string(v.Get("session", "refresh_token").GetStringBytes()))
 
-		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "expire_at").GetStringBytes()))
+		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "access_expiration").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano(), timestamp.UnixNano(), 1000)
 
-		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "valid_until").GetStringBytes()))
+		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "refresh_expiration").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.InEpsilon(t, session.ExpireAt.UnixNano(), timestamp.UnixNano(), 1000)
 

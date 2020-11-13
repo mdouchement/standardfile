@@ -91,7 +91,6 @@ func TestRequestParams20161215(t *testing.T) {
 
 		params := echo.Map{
 			"identifier": "nobody@nowhere.lan",
-			"pw_cost":    110_000,
 			"nonce":      sha256.Sum256([]byte("nobody@nowhere.lan" + hostname)),
 			"version":    "004",
 		}
