@@ -49,15 +49,15 @@ func (a *auth) Version() string {
 
 func (a *auth) IntegrityCheck() error {
 	switch a.FieldVersion {
-	case "003":
+	case ProtocolVersion3:
 		if a.FieldCost < 110000 {
 			return ErrLowPasswordCost
 		}
-	case "002":
+	case ProtocolVersion2:
 		if a.FieldCost < 3000 {
 			return ErrLowPasswordCost
 		}
-	case "001":
+	case ProtocolVersion1:
 		fallthrough
 	default:
 		return ErrUnsupportedVersion

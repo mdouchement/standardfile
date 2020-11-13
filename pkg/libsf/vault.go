@@ -37,7 +37,7 @@ func parse(secret, id string) (vault, error) {
 	}
 
 	v.version = components[0]
-	if v.version != "002" && v.version != "003" {
+	if v.version != ProtocolVersion2 && v.version != ProtocolVersion3 {
 		return v, errors.New("unsupported secret version")
 	}
 

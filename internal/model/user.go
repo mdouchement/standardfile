@@ -1,15 +1,6 @@
 package model
 
-const (
-	// Version2 is the client version.
-	Version2 = "002"
-	// Version3 is the client version.
-	Version3 = "003"
-	// Version4 is the client version.
-	Version4 = "004"
-	// VersionLatest is the client version.
-	VersionLatest = Version3
-)
+import "github.com/mdouchement/standardfile/pkg/libsf"
 
 // A User represents a database record.
 type User struct {
@@ -35,6 +26,6 @@ func NewUser() *User {
 	return &User{
 		// https://github.com/standardfile/ruby-server/blob/master/app/controllers/api/auth_controller.rb#L70
 		// Version3 is provided by client and overrided before inserting record.
-		Version: Version2,
+		Version: libsf.ProtocolVersion2,
 	}
 }

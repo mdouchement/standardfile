@@ -30,8 +30,11 @@ type (
 		Email                string `json:"email"`
 		RegistrationPassword string `json:"password"`
 		PasswordNonce        string `json:"pw_nonce"`
-		PasswordCost         int    `json:"pw_cost"`
+		PasswordCost         int    `json:"pw_cost"` // Before 202000115
 		Version              string `json:"version"`
+		Created              string `json:"created"`     // Since 20200115
+		Identifier           string `json:"identifier"`  // Since 20200115
+		Origination          string `json:"origination"` // Since 20200115
 	}
 
 	// LoginParams are used to login a user.

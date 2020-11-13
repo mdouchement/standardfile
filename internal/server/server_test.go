@@ -14,6 +14,7 @@ import (
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server"
 	"github.com/mdouchement/standardfile/internal/server/session"
+	"github.com/mdouchement/standardfile/pkg/libsf"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -74,7 +75,7 @@ func createUser(ioc server.IOC) *model.User {
 	user.CreatedAt = &t
 	user.UpdatedAt = &t
 	user.Email = "george.abitbol@nowhere.lan"
-	user.Version = model.VersionLatest
+	user.Version = libsf.ProtocolVersion3
 	user.Password, err = argon2.GenerateFromPasswordString("password42", argon2.Default)
 	user.PasswordCost = 110000
 	user.PasswordNonce = "nonce42"
@@ -95,7 +96,7 @@ func createUserWithSession(ioc server.IOC) (*model.User, *model.Session) {
 
 	user := model.NewUser()
 	user.Email = "george.abitbol@nowhere.lan"
-	user.Version = model.Version4
+	user.Version = libsf.ProtocolVersion4
 	user.Password, err = argon2.GenerateFromPasswordString("password42", argon2.Default)
 	user.PasswordCost = 110000
 	user.PasswordNonce = "nonce42"
