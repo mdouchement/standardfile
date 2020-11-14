@@ -23,24 +23,24 @@ type SessionList struct {
 }
 
 func TestRequestSessionList(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
 
-	sessions := session.NewManager(ioc.Database, ioc.SigningKey, ioc.AccessTokenExpirationTime, ioc.RefreshTokenExpirationTime)
-	user, session := createUserWithSession(ioc)
+	sessions := session.NewManager(ctrl.Database, ctrl.SigningKey, ctrl.SessionSecret, ctrl.AccessTokenExpirationTime, ctrl.RefreshTokenExpirationTime)
+	user, session := createUserWithSession(ctrl)
 	for i := 0; i < 2; i++ {
 		s := sessions.Generate()
 		s.UserID = user.ID
 		s.APIVersion = session.APIVersion
 		s.UserAgent = session.UserAgent
-		err := ioc.Database.Save(s)
+		err := ctrl.Database.Save(s)
 		assert.NoError(t, err)
 	}
 	s := sessions.Generate()
 	s.APIVersion = session.APIVersion
 	s.UserID = "another-user-id"
 	s.UserAgent = "trololo"
-	err := ioc.Database.Save(s)
+	err := ctrl.Database.Save(s)
 	assert.NoError(t, err)
 
 	//
@@ -51,7 +51,7 @@ func TestRequestSessionList(t *testing.T) {
 	})
 
 	header := gofight.H{
-		"Authorization": "Bearer " + session.AccessToken,
+		"Authorization": "Bearer " + accessToken(ctrl, session),
 	}
 
 	r.GET("/sessions").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
@@ -82,11 +82,11 @@ type SessionRefresh struct {
 }
 
 func TestRequestSessionRegenerate(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
 
-	sessions := session.NewManager(ioc.Database, ioc.SigningKey, ioc.AccessTokenExpirationTime, ioc.RefreshTokenExpirationTime)
-	_, session := createUserWithSession(ioc)
+	sessions := session.NewManager(ctrl.Database, ctrl.SigningKey, ctrl.SessionSecret, ctrl.AccessTokenExpirationTime, ctrl.RefreshTokenExpirationTime)
+	_, session := createUserWithSession(ctrl)
 
 	//
 
@@ -96,7 +96,7 @@ func TestRequestSessionRegenerate(t *testing.T) {
 	})
 
 	header := gofight.H{
-		"Authorization": "Bearer " + session.AccessToken,
+		"Authorization": "Bearer " + accessToken(ctrl, session),
 	}
 
 	params := gofight.D{}
@@ -106,13 +106,13 @@ func TestRequestSessionRegenerate(t *testing.T) {
 		assert.JSONEq(t, `{"error":{"message":"Please provide all required parameters."}}`, r.Body.String())
 	})
 
-	params["access_token"] = session.AccessToken
+	params["access_token"] = accessToken(ctrl, session)
 	r.POST("/session/refresh").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusBadRequest, r.Code)
 		assert.JSONEq(t, `{"error":{"message":"Please provide all required parameters."}}`, r.Body.String())
 	})
 
-	params["refresh_token"] = session.RefreshToken
+	params["refresh_token"] = refreshToken(ctrl, session)
 	r.POST("/session/refresh").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusOK, r.Code)
 
@@ -128,24 +128,24 @@ func TestRequestSessionRegenerate(t *testing.T) {
 		assert.NotEqual(t, session.RefreshToken, refresh.Session.RefreshToken)
 
 		assert.Greater(t, refresh.Session.RefreshExpiration.UnixNano(), session.ExpireAt.UnixNano())
-		assert.InEpsilon(t, session.CreatedAt.UnixNano(), session.ExpireAt.Add(-ioc.RefreshTokenExpirationTime).UnixNano(), 1000)
+		assert.InEpsilon(t, session.CreatedAt.UnixNano(), session.ExpireAt.Add(-ctrl.RefreshTokenExpirationTime).UnixNano(), 1000)
 		assert.Greater(t, refresh.Session.AccessExpiration.UnixNano(), sessions.AccessTokenExprireAt(session).UnixNano())
-		assert.InEpsilon(t, session.CreatedAt.UnixNano(), sessions.AccessTokenExprireAt(session).Add(-ioc.AccessTokenExpirationTime).UnixNano(), 1000)
+		assert.InEpsilon(t, session.CreatedAt.UnixNano(), sessions.AccessTokenExprireAt(session).Add(-ctrl.AccessTokenExpirationTime).UnixNano(), 1000)
 	})
 }
 
 func TestRequestSessionDelete(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
 
-	sessions := session.NewManager(ioc.Database, ioc.SigningKey, ioc.AccessTokenExpirationTime, ioc.RefreshTokenExpirationTime)
-	user, session := createUserWithSession(ioc)
+	sessions := session.NewManager(ctrl.Database, ctrl.SigningKey, ctrl.SessionSecret, ctrl.AccessTokenExpirationTime, ctrl.RefreshTokenExpirationTime)
+	user, session := createUserWithSession(ctrl)
 
 	session2 := sessions.Generate()
 	session2.UserID = user.ID
 	session2.APIVersion = session.APIVersion
 	session2.UserAgent = session.UserAgent
-	err := ioc.Database.Save(session2)
+	err := ctrl.Database.Save(session2)
 	assert.NoError(t, err)
 
 	//
@@ -156,7 +156,7 @@ func TestRequestSessionDelete(t *testing.T) {
 	})
 
 	header := gofight.H{
-		"Authorization": "Bearer " + session.AccessToken,
+		"Authorization": "Bearer " + accessToken(ctrl, session),
 	}
 	params := gofight.D{}
 
@@ -187,24 +187,24 @@ func TestRequestSessionDelete(t *testing.T) {
 	r.DELETE("/session").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusNoContent, r.Code)
 
-		_, err = ioc.Database.FindSession(session2.ID) // reload session
-		assert.True(t, ioc.Database.IsNotFound(err))
+		_, err = ctrl.Database.FindSession(session2.ID) // reload session
+		assert.True(t, ctrl.Database.IsNotFound(err))
 	})
 }
 
 func TestRequestSessionDeleteAll(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
 
-	sessions := session.NewManager(ioc.Database, ioc.SigningKey, ioc.AccessTokenExpirationTime, ioc.RefreshTokenExpirationTime)
-	user, session := createUserWithSession(ioc)
+	sessions := session.NewManager(ctrl.Database, ctrl.SigningKey, ctrl.SessionSecret, ctrl.AccessTokenExpirationTime, ctrl.RefreshTokenExpirationTime)
+	user, session := createUserWithSession(ctrl)
 
 	for i := 0; i < 2; i++ {
 		s := sessions.Generate()
 		s.UserID = user.ID
 		s.APIVersion = session.APIVersion
 		s.UserAgent = session.UserAgent
-		err := ioc.Database.Save(s)
+		err := ctrl.Database.Save(s)
 		assert.NoError(t, err)
 	}
 
@@ -216,13 +216,13 @@ func TestRequestSessionDeleteAll(t *testing.T) {
 	})
 
 	header := gofight.H{
-		"Authorization": "Bearer " + session.AccessToken,
+		"Authorization": "Bearer " + accessToken(ctrl, session),
 	}
 
 	r.DELETE("/session/all").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusNoContent, r.Code)
 
-		sessions, err := ioc.Database.FindSessionsByUserID(user.ID)
+		sessions, err := ctrl.Database.FindSessionsByUserID(user.ID)
 		assert.NoError(t, err)
 
 		assert.Len(t, sessions, 1)

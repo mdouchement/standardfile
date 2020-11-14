@@ -25,7 +25,7 @@ type sync20190520 struct {
 }
 
 func TestRequestItemsSync20190520(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
 
 	r.POST("/items/sync").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
@@ -33,9 +33,9 @@ func TestRequestItemsSync20190520(t *testing.T) {
 		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
 	})
 
-	user := createUser(ioc)
+	user := createUser(ctrl)
 	header := gofight.H{
-		"Authorization": "Bearer " + server.CreateJWT(ioc, user),
+		"Authorization": "Bearer " + server.CreateJWT(ctrl, user),
 	}
 
 	r.POST("/items/sync").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
@@ -56,7 +56,7 @@ func TestRequestItemsSync20190520(t *testing.T) {
 		EncryptedItemKey: "003:3c69d9526d2846671c7e8cf89968f3b6ffd92e82ca15b04d29a3f77100ce857c:d989ccc9-15c6-475e-839b-1690bd07d073:93b257d16f53732d81230e41b62eab7c:Ai0xyC1CFcah3/rubAXV+j433oXoABPU8kmYdAzE1WlscKQIXbds8USDG0HmoC1XkCHerozTcJc5IgTAN2JZZBYttmllRswgpn7vDKZIUbXa/FDao3l6a43hedxIfd+4b1moSnB1IgG/T8c+WoA0zDd5vKtB5EMyljLVbyItBZnNrg7toV1bSWQ1t+8xUcKm:eyJpZGVudGlmaWVyIjoiZ2VvcmdlLmFiaXRib2xAbm93aGVyZS5sYW4iLCJ2ZXJzaW9uIjoiMDAzIiwicHdfY29zdCI6NDIwMDAwLCJwd19ub25jZSI6Im5vbmNlIn0=",
 		Deleted:          false,
 	}
-	err := ioc.Database.Save(item)
+	err := ctrl.Database.Save(item)
 	if err != nil {
 		panic(err)
 	}
@@ -93,7 +93,7 @@ func TestRequestItemsSync20190520(t *testing.T) {
 	//
 
 	item.UserID = user.ID
-	err = ioc.Database.Save(item)
+	err = ctrl.Database.Save(item)
 	if err != nil {
 		panic(err)
 	}

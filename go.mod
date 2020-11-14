@@ -24,8 +24,10 @@ require (
 	github.com/labstack/echo v3.3.10+incompatible // indirect
 	github.com/labstack/echo/v4 v4.1.17
 	github.com/mattn/go-colorable v0.1.8 // indirect
+	github.com/mdouchement/middlewarex v0.3.0
 	github.com/mdouchement/simple-argon2 v0.1.2
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
+	github.com/o1egl/paseto/v2 v2.1.1
 	github.com/oleiade/reflections v1.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/sanity-io/litter v1.3.0
@@ -38,8 +40,9 @@ require (
 	go.etcd.io/bbolt v1.3.5 // indirect
 	golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
-	golang.org/x/sys v0.0.0-20201112073958-5cba982894dd // indirect
+	golang.org/x/sys v0.0.0-20201113233024-12cec1faf1ba // indirect
 	golang.org/x/text v0.3.4 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/gin-gonic/gin.v1 v1.3.0 // indirect

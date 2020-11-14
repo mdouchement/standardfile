@@ -14,6 +14,7 @@ import (
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server"
 	"github.com/mdouchement/standardfile/internal/server/session"
+	sessionpkg "github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/pkg/libsf"
 	"github.com/stretchr/testify/assert"
 )
@@ -38,7 +39,7 @@ func TestRequestVersion(t *testing.T) {
 	})
 }
 
-func setup() (engine *echo.Echo, ioc server.Controller, r *gofight.RequestConfig, cleanup func()) {
+func setup() (engine *echo.Echo, ctrl server.Controller, r *gofight.RequestConfig, cleanup func()) {
 	tmpfile, err := ioutil.TempFile("", "standardfile.*.db")
 	if err != nil {
 		panic(err)
@@ -51,23 +52,24 @@ func setup() (engine *echo.Echo, ioc server.Controller, r *gofight.RequestConfig
 		panic(err)
 	}
 
-	ioc = server.Controller{
+	ctrl = server.Controller{
 		Version:                    "test",
 		Database:                   db,
 		NoRegistration:             false,
 		SigningKey:                 []byte("secret"),
+		SessionSecret:              []byte("00000000000000000000000000000000"),
 		AccessTokenExpirationTime:  60 * 24 * time.Hour,
 		RefreshTokenExpirationTime: 365 * 24 * time.Hour,
 	}
-	engine = server.EchoEngine(ioc)
+	engine = server.EchoEngine(ctrl)
 
-	return engine, ioc, gofight.New(), func() {
+	return engine, ctrl, gofight.New(), func() {
 		db.Close()
 		os.RemoveAll(filename)
 	}
 }
 
-func createUser(ioc server.Controller) *model.User {
+func createUser(ctrl server.Controller) *model.User {
 	var err error
 	t := time.Now()
 
@@ -83,7 +85,7 @@ func createUser(ioc server.Controller) *model.User {
 	if err != nil {
 		panic(err)
 	}
-	err = ioc.Database.Save(user)
+	err = ctrl.Database.Save(user)
 	if err != nil {
 		panic(err)
 	}
@@ -91,7 +93,7 @@ func createUser(ioc server.Controller) *model.User {
 	return user
 }
 
-func createUserWithSession(ioc server.Controller) (*model.User, *model.Session) {
+func createUserWithSession(ctrl server.Controller) (*model.User, *model.Session) {
 	var err error
 
 	user := model.NewUser()
@@ -104,7 +106,7 @@ func createUserWithSession(ioc server.Controller) (*model.User, *model.Session) 
 	if err != nil {
 		panic(err)
 	}
-	err = ioc.Database.Save(user)
+	err = ctrl.Database.Save(user)
 	if err != nil {
 		panic(err)
 	}
@@ -113,14 +115,46 @@ func createUserWithSession(ioc server.Controller) (*model.User, *model.Session) 
 		APIVersion:   "20200115",
 		UserAgent:    "Go-http-client/1.1",
 		UserID:       user.ID,
-		ExpireAt:     time.Now().Add(ioc.RefreshTokenExpirationTime).UTC(),
-		AccessToken:  session.SecureToken(24),
-		RefreshToken: session.SecureToken(24),
+		ExpireAt:     time.Now().Add(ctrl.RefreshTokenExpirationTime).UTC(),
+		AccessToken:  session.SecureToken(8),
+		RefreshToken: session.SecureToken(8),
 	}
-	err = ioc.Database.Save(session)
+	err = ctrl.Database.Save(session)
 	if err != nil {
 		panic(err)
 	}
 
 	return user, session
+}
+
+func accessToken(ctrl server.Controller, s *model.Session) string {
+	sessions := sessionpkg.NewManager(
+		ctrl.Database,
+		ctrl.SigningKey,
+		ctrl.SessionSecret,
+		ctrl.AccessTokenExpirationTime,
+		ctrl.RefreshTokenExpirationTime,
+	)
+
+	token, err := sessions.Token(s, sessionpkg.TypeAccessToken)
+	if err != nil {
+		panic(err)
+	}
+	return token
+}
+
+func refreshToken(ctrl server.Controller, s *model.Session) string {
+	sessions := sessionpkg.NewManager(
+		ctrl.Database,
+		ctrl.SigningKey,
+		ctrl.SessionSecret,
+		ctrl.AccessTokenExpirationTime,
+		ctrl.RefreshTokenExpirationTime,
+	)
+
+	token, err := sessions.Token(s, sessionpkg.TypeRefreshToken)
+	if err != nil {
+		panic(err)
+	}
+	return token
 }

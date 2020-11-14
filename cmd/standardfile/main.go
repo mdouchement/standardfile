@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"hash"
+	"io"
 	"log"
 	"path/filepath"
 
@@ -13,6 +15,8 @@ import (
 	"github.com/mdouchement/standardfile/internal/server"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/hkdf"
 )
 
 const dbname = "standardfile.db"
@@ -51,6 +55,23 @@ func dbnameWithPath(path string) string {
 		return dbname
 	}
 	return filepath.Join(path, dbname)
+}
+
+func kdf(l int, k []byte) []byte {
+	h, err := blake2b.New256(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	payload := make([]byte, l)
+
+	kdf := hkdf.New(func() hash.Hash { return h }, k, nil, nil)
+	_, err = io.ReadFull(kdf, payload)
+	if err != nil {
+		panic(err)
+	}
+
+	return payload
 }
 
 var (
@@ -114,6 +135,7 @@ var (
 				Database:                   db,
 				NoRegistration:             konf.Bool("no_registration"),
 				SigningKey:                 konf.MustBytes("secret_key"),
+				SessionSecret:              kdf(32, konf.MustBytes("session.secret")),
 				AccessTokenExpirationTime:  konf.MustDuration("session.access_token_ttl"),
 				RefreshTokenExpirationTime: konf.MustDuration("session.refresh_token_ttl"),
 			})

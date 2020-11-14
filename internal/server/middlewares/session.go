@@ -6,7 +6,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/mdouchement/middlewarex"
 	"github.com/mdouchement/standardfile/internal/server/session"
+	"github.com/o1egl/paseto/v2"
 )
 
 const (
@@ -23,6 +25,14 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 	jwt := middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey: m.JWTSigningKey(),
 	})
+	paseto := middlewarex.PASETOWithConfig(middlewarex.PASETOConfig{
+		SigningKey: m.SessionSecret(),
+		Validators: []paseto.Validator{
+			paseto.IssuedBy("standardfile"),
+			paseto.ForAudience(session.TypeAccessToken),
+		},
+	})
+
 	fake := func(echo.Context) error {
 		return nil
 	}
@@ -30,42 +40,8 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
 			authorization := c.Request().Header.Get(echo.HeaderAuthorization)
-
-			//
-			// JWT
-			//
-
-			if strings.Count(authorization, ".") == 2 {
-				err = jwt(fake)(c)
-				if err != nil {
-					return err
-				}
-
-				user, err := m.UserFromToken(c.Get(middleware.DefaultJWTConfig.ContextKey))
-				if err != nil {
-					return err
-				}
-
-				// TODO: Find a way to extract `api` (apiversion) from the requests body.
-				// if apiversion >= 20190520 && session.UserSupportsSessions(user) {
-				// 	return c.JSON(http.StatusUnauthorized, echo.Map{
-				// 		"error": echo.Map{
-				// 			"tag":     "invalid-auth",
-				// 			"message": "Invalid login credentials.",
-				// 		},
-				// 	})
-				// }
-
-				// Store current_user for handlers.
-				c.Set(CurrentUserContextKey, user)
-				return next(c)
-			}
-
-			//
-			// Session
-			//
-
 			token := token(authorization)
+
 			if token == "" {
 				return c.JSON(http.StatusUnauthorized, echo.Map{
 					"error": echo.Map{
@@ -75,20 +51,72 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 				})
 			}
 
-			// Find, validate and store current_session for handlers.
-			session, err := m.Validate(token)
-			if err != nil {
-				return err
-			}
-			c.Set(CurrentSessionContextKey, session)
+			//
+			// Session
+			//
 
-			// Find and store current_user for handlers.
-			user, err := m.UserFromToken(token)
+			if strings.HasPrefix(token, "v2.local.") {
+				err = paseto(fake)(c) // Check PASETO validity according its claims.
+				if err != nil {
+					return c.JSON(http.StatusUnauthorized, echo.Map{
+						"error": echo.Map{
+							"tag":     "invalid-auth",
+							"message": "Invalid login credentials.",
+						},
+					})
+				}
+
+				tk := c.Get(middlewarex.DefaultPASETOConfig.ContextKey).(middlewarex.Token)
+
+				// Find, validate and store current_session for handlers.
+				session, err := m.Validate(tk.Subject, tk.Jti)
+				if err != nil {
+					return err
+				}
+				c.Set(CurrentSessionContextKey, session)
+
+				// Find and store current_user for handlers.
+				user, err := m.UserFromToken(tk)
+				if err != nil {
+					return err
+				}
+				c.Set(CurrentUserContextKey, user)
+
+				// TODO: Find a way to extract `api` (apiversion) from the requests body.
+				// Revoke old JWT.
+				// if apiversion >= 20190520 && session.UserSupportsSessions(user) {
+				// 	return c.JSON(http.StatusUnauthorized, echo.Map{
+				// 		"error": echo.Map{
+				// 			"tag":     "invalid-auth",
+				// 			"message": "Invalid login credentials.",
+				// 		},
+				// 	})
+				// }
+
+				return next(c)
+			}
+
+			//
+			// JWT
+			//
+
+			err = jwt(fake)(c) // Check JWT validity according its claims.
+			if err != nil {
+				return c.JSON(http.StatusUnauthorized, echo.Map{
+					"error": echo.Map{
+						"tag":     "invalid-auth",
+						"message": "Invalid login credentials.",
+					},
+				})
+			}
+
+			user, err := m.UserFromToken(c.Get(middleware.DefaultJWTConfig.ContextKey))
 			if err != nil {
 				return err
 			}
+
+			// Store current_user for handlers.
 			c.Set(CurrentUserContextKey, user)
-
 			return next(c)
 		}
 	}

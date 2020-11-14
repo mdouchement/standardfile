@@ -12,8 +12,8 @@ type Session struct {
 	UserID       string    `msgpack:"user_id"       storm:"index"`
 	UserAgent    string    `msgpack:"user_agent"`
 	APIVersion   string    `msgpack:"api_version"`
-	AccessToken  string    `msgpack:"access_token"  storm:"unique"`
-	RefreshToken string    `msgpack:"refresh_token" storm:"unique"`
+	AccessToken  string    `msgpack:"access_token"  storm:"index"`
+	RefreshToken string    `msgpack:"refresh_token"`
 
 	// Custom fields
 	Current bool `msgpack:"-"`

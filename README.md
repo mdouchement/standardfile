@@ -80,6 +80,13 @@ This feature is pretty undocumented and I feel uncomfortable about the outgoing 
 
 </details>
 
+<details>
+<summary>Session use PASETO tokens instead of random tokens</summary>
+
+> Here we will be using PASETO to strengthen authentication to ensure that the tokens are issued by the server.
+
+</details>
+
 ## Not implemented (yet)
 
 - **2FA** (aka `verify_mfa`)

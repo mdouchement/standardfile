@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/server/serializer"
-	"github.com/mdouchement/standardfile/internal/server/session"
+	sessionpkg "github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/internal/sferror"
 	"github.com/pkg/errors"
 )
@@ -14,7 +14,7 @@ import (
 type (
 	sess struct {
 		db       database.Client
-		sessions session.Manager
+		sessions sessionpkg.Manager
 	}
 
 	refreshSessionParams struct {
@@ -59,7 +59,18 @@ func (s *sess) Refresh(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, sferror.New("Please provide all required parameters."))
 	}
 
-	session, err := s.db.FindSessionByTokens(params.AccessToken, params.RefreshToken)
+	sida, access, erra := s.sessions.ParseToken(params.AccessToken)
+	sidr, refresh, errr := s.sessions.ParseToken(params.RefreshToken)
+	if erra != nil || errr != nil || sida != sidr {
+		return c.JSON(http.StatusBadRequest, sferror.NewWithTagCode(
+			http.StatusBadRequest,
+			"invalid-parameters",
+			"The provided parameters are not valid.",
+		))
+	}
+
+	// Retrieve session
+	session, err := s.db.FindSessionByTokens(sida, access, refresh)
 	if err != nil {
 		if s.db.IsNotFound(err) {
 			return c.JSON(http.StatusBadRequest, sferror.NewWithTagCode(
@@ -71,6 +82,7 @@ func (s *sess) Refresh(c echo.Context) error {
 		return errors.Wrap(err, "could not get refresh session")
 	}
 
+	// Regenerate tokens
 	if err = s.sessions.Regenerate(session); err != nil {
 		return c.JSON(http.StatusBadRequest, sferror.NewWithTagCode(
 			http.StatusBadRequest,
@@ -79,10 +91,19 @@ func (s *sess) Refresh(c echo.Context) error {
 		))
 	}
 
+	access, err = s.sessions.Token(session, sessionpkg.TypeAccessToken)
+	if err != nil {
+		return errors.Wrap(err, "could not generate access token")
+	}
+	refresh, err = s.sessions.Token(session, sessionpkg.TypeRefreshToken)
+	if err != nil {
+		return errors.Wrap(err, "could not generate refresh token")
+	}
+
 	return c.JSON(http.StatusOK, echo.Map{
 		"session": echo.Map{
-			"access_token":       session.AccessToken,
-			"refresh_token":      session.RefreshToken,
+			"access_token":       access,
+			"refresh_token":      refresh,
 			"access_expiration":  s.sessions.AccessTokenExprireAt(session).UTC(),
 			"refresh_expiration": session.ExpireAt.UTC(),
 		},
