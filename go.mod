@@ -20,10 +20,12 @@ require (
 	github.com/gofrs/uuid v3.3.0+incompatible
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
+	github.com/knadh/koanf v0.14.0
 	github.com/labstack/echo v3.3.10+incompatible // indirect
 	github.com/labstack/echo/v4 v4.1.17
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mdouchement/simple-argon2 v0.1.2
+	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/oleiade/reflections v1.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/sanity-io/litter v1.3.0

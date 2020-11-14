@@ -14,8 +14,8 @@ import (
 	"github.com/mdouchement/standardfile/internal/server/session"
 )
 
-// An IOC is an Iversion Of Control pattern used to init the server package.
-type IOC struct {
+// A Controller is an Iversion Of Control pattern used to init the server package.
+type Controller struct {
 	Version        string
 	Database       database.Client
 	NoRegistration bool
@@ -27,7 +27,7 @@ type IOC struct {
 }
 
 // EchoEngine instantiates the wep server.
-func EchoEngine(ctrl IOC) *echo.Echo {
+func EchoEngine(ctrl Controller) *echo.Echo {
 	engine := echo.New()
 	engine.Use(middleware.Recover())
 	// engine.Use(middleware.CSRF()) // not supported by StandardNotes
