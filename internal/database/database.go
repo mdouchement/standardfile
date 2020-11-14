@@ -41,10 +41,10 @@ type (
 		FindActiveSessionsByUserID(userID string) ([]*model.Session, error)
 		// FindSessionsByUserID returns all sessions for the given user id.
 		FindSessionsByUserID(userID string) ([]*model.Session, error)
-		// FindSessionByAccessToken returns the session for the given access token.
-		FindSessionByAccessToken(token string) (*model.Session, error)
-		// FindSessionByTokens returns the session for the given access and refresh token.
-		FindSessionByTokens(access, refresh string) (*model.Session, error)
+		// FindSessionByAccessToken returns the session for the given id and access token.
+		FindSessionByAccessToken(id, token string) (*model.Session, error)
+		// FindSessionByTokens returns the session for the given id, access and refresh token.
+		FindSessionByTokens(id, access, refresh string) (*model.Session, error)
 	}
 
 	// An ItemInteraction defines all the methods used to interact with a item record(s).

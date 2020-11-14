@@ -7,7 +7,9 @@ import (
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server/serializer"
 	"github.com/mdouchement/standardfile/internal/server/session"
+	sessionpkg "github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/internal/sferror"
+	"github.com/pkg/errors"
 )
 
 type userService20200115 struct {
@@ -49,11 +51,20 @@ func (s *userService20200115) SuccessfulAuthentication(u *model.User, params Par
 		}
 	}
 
+	access, err := s.sessions.Token(session, sessionpkg.TypeAccessToken)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not generate access token")
+	}
+	refresh, err := s.sessions.Token(session, sessionpkg.TypeRefreshToken)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not generate refresh token")
+	}
+
 	return echo.Map{
 		"user": serializer.User(u),
 		"session": echo.Map{
-			"access_token":       session.AccessToken,
-			"refresh_token":      session.RefreshToken,
+			"access_token":       access,
+			"refresh_token":      refresh,
 			"access_expiration":  s.sessions.AccessTokenExprireAt(session).UTC(),
 			"refresh_expiration": session.ExpireAt.UTC(),
 		},

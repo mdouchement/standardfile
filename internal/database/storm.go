@@ -125,19 +125,20 @@ func (c *strm) FindSessionByUserID(id, userID string) (*model.Session, error) {
 	return &session, nil
 }
 
-// FindSessionByAccessToken returns the session for the given access token.
-func (c *strm) FindSessionByAccessToken(token string) (*model.Session, error) {
+// FindSessionByAccessToken returns the session for the given id and access token.
+func (c *strm) FindSessionByAccessToken(id, token string) (*model.Session, error) {
 	var session model.Session
-	if err := c.db.One("AccessToken", token, &session); err != nil {
+	err := c.db.Select(q.Eq("ID", id), q.Eq("AccessToken", token)).First(&session)
+	if err != nil {
 		return nil, errors.Wrap(err, "find session by access token")
 	}
 	return &session, nil
 }
 
-// FindSessionByTokens returns the session for the given access and refresh token.
-func (c *strm) FindSessionByTokens(access, refresh string) (*model.Session, error) {
+// FindSessionByTokens returns the session for the given id, access and refresh token.
+func (c *strm) FindSessionByTokens(id, access, refresh string) (*model.Session, error) {
 	var session model.Session
-	err := c.db.Select(q.Eq("AccessToken", access), q.Eq("RefreshToken", refresh)).First(&session)
+	err := c.db.Select(q.Eq("ID", id), q.Eq("AccessToken", access), q.Eq("RefreshToken", refresh)).First(&session)
 	if err != nil {
 		return nil, errors.Wrap(err, "find session by tokens")
 	}

@@ -75,7 +75,7 @@ func TestRequestRegistration20161215(t *testing.T) {
 }
 
 func TestRequestParams20161215(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
 
 	r.GET("/auth/params").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
@@ -101,7 +101,7 @@ func TestRequestParams20161215(t *testing.T) {
 		assert.JSONEq(t, string(payload), r.Body.String())
 	})
 
-	createUser(ioc)
+	createUser(ctrl)
 
 	r.GET("/auth/params?email=george.abitbol@nowhere.lan").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusOK, r.Code)
@@ -110,9 +110,9 @@ func TestRequestParams20161215(t *testing.T) {
 }
 
 func TestRequestLogin20161215(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
-	user := createUser(ioc)
+	user := createUser(ctrl)
 
 	r.POST("/auth/sign_in").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusBadRequest, r.Code)
@@ -166,10 +166,10 @@ func TestRequestLogin20161215(t *testing.T) {
 }
 
 func TestRequestLogout20161215(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
 
-	user := createUser(ioc)
+	user := createUser(ctrl)
 
 	//
 
@@ -179,7 +179,7 @@ func TestRequestLogout20161215(t *testing.T) {
 	})
 
 	header := gofight.H{
-		"Authorization": "Bearer " + server.CreateJWT(ioc, user),
+		"Authorization": "Bearer " + server.CreateJWT(ctrl, user),
 	}
 
 	r.POST("/auth/sign_out").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
@@ -193,7 +193,7 @@ func TestRequestLogout20161215(t *testing.T) {
 }
 
 func TestRequestUpdate20161215(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
 
 	r.POST("/auth/update").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
@@ -201,9 +201,9 @@ func TestRequestUpdate20161215(t *testing.T) {
 		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
 	})
 
-	user := createUser(ioc)
+	user := createUser(ctrl)
 	header := gofight.H{
-		"Authorization": "Bearer " + server.CreateJWT(ioc, user),
+		"Authorization": "Bearer " + server.CreateJWT(ctrl, user),
 	}
 	params := gofight.D{
 		"pw_cost": user.PasswordCost * 2,
@@ -215,7 +215,7 @@ func TestRequestUpdate20161215(t *testing.T) {
 		v, err := fastjson.Parse(r.Body.String())
 		assert.NoError(t, err)
 
-		assert.Equal(t, server.CreateJWT(ioc, user), string(v.Get("token").GetStringBytes()))
+		assert.Equal(t, server.CreateJWT(ctrl, user), string(v.Get("token").GetStringBytes()))
 		assert.Equal(t, user.Version, string(v.Get("user", "version").GetStringBytes()))
 		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
 		assert.Equal(t, user.Email, string(v.Get("user", "email").GetStringBytes()))
@@ -233,7 +233,7 @@ func TestRequestUpdate20161215(t *testing.T) {
 }
 
 func TestRequestUpdatePassword20161215(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
 
 	r.POST("/auth/change_pw").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
@@ -241,9 +241,9 @@ func TestRequestUpdatePassword20161215(t *testing.T) {
 		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
 	})
 
-	user := createUser(ioc)
+	user := createUser(ctrl)
 	header := gofight.H{
-		"Authorization": "Bearer " + server.CreateJWT(ioc, user),
+		"Authorization": "Bearer " + server.CreateJWT(ctrl, user),
 	}
 	params := gofight.D{
 		"identifier": user.Email,
@@ -275,10 +275,10 @@ func TestRequestUpdatePassword20161215(t *testing.T) {
 		v, err := fastjson.Parse(r.Body.String())
 		assert.NoError(t, err)
 
-		user, err = ioc.Database.FindUser(user.ID) // reload user
+		user, err = ctrl.Database.FindUser(user.ID) // reload user
 		assert.NoError(t, err)
 
-		assert.Equal(t, server.CreateJWT(ioc, user), string(v.Get("token").GetStringBytes()))
+		assert.Equal(t, server.CreateJWT(ctrl, user), string(v.Get("token").GetStringBytes()))
 		assert.Equal(t, user.Version, string(v.Get("user", "version").GetStringBytes()))
 		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
 		assert.Equal(t, user.Email, string(v.Get("user", "email").GetStringBytes()))

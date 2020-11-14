@@ -22,6 +22,7 @@ type Controller struct {
 	// JWT params
 	SigningKey []byte
 	// Session params
+	SessionSecret              []byte
 	AccessTokenExpirationTime  time.Duration
 	RefreshTokenExpirationTime time.Duration
 }
@@ -53,6 +54,7 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	sessions := session.NewManager(
 		ctrl.Database,
 		ctrl.SigningKey,
+		ctrl.SessionSecret,
 		ctrl.AccessTokenExpirationTime,
 		ctrl.RefreshTokenExpirationTime,
 	)
