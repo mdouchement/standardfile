@@ -38,7 +38,7 @@ func TestRequestVersion(t *testing.T) {
 	})
 }
 
-func setup() (engine *echo.Echo, ioc server.IOC, r *gofight.RequestConfig, cleanup func()) {
+func setup() (engine *echo.Echo, ioc server.Controller, r *gofight.RequestConfig, cleanup func()) {
 	tmpfile, err := ioutil.TempFile("", "standardfile.*.db")
 	if err != nil {
 		panic(err)
@@ -51,7 +51,7 @@ func setup() (engine *echo.Echo, ioc server.IOC, r *gofight.RequestConfig, clean
 		panic(err)
 	}
 
-	ioc = server.IOC{
+	ioc = server.Controller{
 		Version:                    "test",
 		Database:                   db,
 		NoRegistration:             false,
@@ -67,7 +67,7 @@ func setup() (engine *echo.Echo, ioc server.IOC, r *gofight.RequestConfig, clean
 	}
 }
 
-func createUser(ioc server.IOC) *model.User {
+func createUser(ioc server.Controller) *model.User {
 	var err error
 	t := time.Now()
 
@@ -91,7 +91,7 @@ func createUser(ioc server.IOC) *model.User {
 	return user
 }
 
-func createUserWithSession(ioc server.IOC) (*model.User, *model.Session) {
+func createUserWithSession(ioc server.Controller) (*model.User, *model.Session) {
 	var err error
 
 	user := model.NewUser()

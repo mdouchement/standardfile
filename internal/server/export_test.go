@@ -11,7 +11,7 @@ import (
 // This file is only for test purpose and is only loaded by test framework.
 
 // CreateJWT returns a JWT token.
-func CreateJWT(ctrl IOC, u *model.User) string {
+func CreateJWT(ctrl Controller, u *model.User) string {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user_uuid"] = u.ID
