@@ -144,7 +144,14 @@ func accessToken(ctrl server.Controller, s *model.Session) string {
 }
 
 func refreshToken(ctrl server.Controller, s *model.Session) string {
-	sessions := sessionpkg.NewManager(ctrl.Database, ctrl.SigningKey, ctrl.SessionSecret, ctrl.AccessTokenExpirationTime, ctrl.RefreshTokenExpirationTime)
+	sessions := sessionpkg.NewManager(
+		ctrl.Database,
+		ctrl.SigningKey,
+		ctrl.SessionSecret,
+		ctrl.AccessTokenExpirationTime,
+		ctrl.RefreshTokenExpirationTime,
+	)
+
 	token, err := sessions.Token(s, sessionpkg.TypeRefreshToken)
 	if err != nil {
 		panic(err)

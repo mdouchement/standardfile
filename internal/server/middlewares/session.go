@@ -56,7 +56,7 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 			//
 
 			if strings.HasPrefix(token, "v2.local.") {
-				err = paseto(fake)(c) // Check PASETO validity accoring its claims.
+				err = paseto(fake)(c) // Check PASETO validity according its claims.
 				if err != nil {
 					return c.JSON(http.StatusUnauthorized, echo.Map{
 						"error": echo.Map{
@@ -100,7 +100,7 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 			// JWT
 			//
 
-			err = jwt(fake)(c) // Check JWT validity accoring its claims.
+			err = jwt(fake)(c) // Check JWT validity according its claims.
 			if err != nil {
 				return c.JSON(http.StatusUnauthorized, echo.Map{
 					"error": echo.Map{
