@@ -63,7 +63,7 @@ func Note() error {
 	for _, item := range items.Retrieved {
 		switch item.ContentType {
 		case libsf.ContentTypeUserPreferences:
-			err := item.Unseal(cfg.Mk, cfg.Ak)
+			err := item.Unseal(&libsf.KeyChain{MasterKey: cfg.Mk, AuthKey: cfg.Ak})
 			if err != nil {
 				return errors.Wrap(err, "could not unseal item")
 			}
@@ -74,7 +74,7 @@ func Note() error {
 
 			ui.SortBy = item.Note.GetSortingField()
 		case libsf.ContentTypeNote:
-			err := item.Unseal(cfg.Mk, cfg.Ak)
+			err := item.Unseal(&libsf.KeyChain{MasterKey: cfg.Mk, AuthKey: cfg.Ak})
 			if err != nil {
 				return errors.Wrap(err, "could not unseal item")
 			}
@@ -102,7 +102,7 @@ func initSynchronizer(client libsf.Client, cfg Config, ui *tui.TUI) func(item *l
 		item.Note.SetUpdatedAtNow()
 		item.Note.SaveRaw()
 
-		err := item.Seal(cfg.Mk, cfg.Ak)
+		err := item.Seal(&libsf.KeyChain{MasterKey: cfg.Mk, AuthKey: cfg.Ak})
 		if err != nil {
 			ui.DisplayStatus(errors.Wrap(err, "could not seal item").Error())
 			return item.UpdatedAt

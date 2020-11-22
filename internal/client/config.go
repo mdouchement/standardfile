@@ -25,6 +25,7 @@ type Config struct {
 	BearerToken string `json:"bearer_token"`
 	Mk          string `json:"mk"`
 	Ak          string `json:"Ak"` // AuthKey
+	// TODO: replace libsf.KeyChain{MasterKey: cfg.Mk, AuthKey: cfg.Ak}
 }
 
 // Load gets the configuration from the current folder according to `credentialsfile` const.

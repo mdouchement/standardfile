@@ -14,6 +14,8 @@ const (
 	ContentTypePrivileges = "SN|Privileges"
 	// ContentTypeComponent are items that describes an editor extension.
 	ContentTypeComponent = "SN|Component"
+	// ContentTypeItemsKey are items used to encrypt Note items.
+	ContentTypeItemsKey = "SN|ItemsKey"
 	// ContentTypeNote are the items with user's written data.
 	ContentTypeNote = "Note"
 )
@@ -36,11 +38,8 @@ type (
 		Retrieved []*Item `json:"retrieved_items"`
 		Saved     []*Item `json:"saved_items"`
 
-		// 20161215 fields
-		Unsaved []*UnsavedItem `json:"unsaved"`
-
-		// 20190520 fields
-		Conflicts []*ConflictItem `json:"conflicts"`
+		Unsaved   []*UnsavedItem  `json:"unsaved"`   // Before 20190520 (Since 20161215 at least)
+		Conflicts []*ConflictItem `json:"conflicts"` // Since 20190520
 	}
 
 	// An Item holds all the data created by end user.
@@ -52,6 +51,7 @@ type (
 		UserID           string `json:"user_uuid"`
 		Content          string `json:"content"`
 		ContentType      string `json:"content_type"`
+		ItemsKeyID       string `json:"items_key_id"` // Since 20200115
 		EncryptedItemKey string `json:"enc_item_key"`
 		Deleted          bool   `json:"deleted"`
 
@@ -95,27 +95,33 @@ func NewSyncItems() SyncItems {
 }
 
 // Seal encrypts Note to item's Content.
-func (i *Item) Seal(mk, ak string) error {
+func (i *Item) Seal(keychain *KeyChain) error {
 	//
 	// Key
 	//
 
-	ik, err := GenerateItemEncryptionKey()
+	ik, err := keychain.GenerateItemEncryptionKey()
 	if err != nil {
 		return errors.Wrap(err, "could not generate encryption key")
 	}
-	i.key = vault{
-		version: i.Version,
-		uuid:    i.ID,
-		params:  i.AuthParams,
+
+	i.key, err = create(i.Version, i.ID)
+	if err != nil {
+		return errors.Wrap(err, "could not create vault")
+	}
+	i.key.setup(i)
+
+	kkc := keychain
+	if i.Version == ProtocolVersion4 && i.ContentType == ContentTypeNote {
+		kkc = &KeyChain{Version: ProtocolVersion4, MasterKey: keychain.ItemsKey[i.ItemsKeyID]}
 	}
 
-	err = i.key.seal([]byte(ik), mk, ak)
+	err = i.key.seal(kkc, []byte(ik))
 	if err != nil {
 		return errors.Wrap(err, "EncryptedItemKey")
 	}
 
-	i.EncryptedItemKey, err = serialize(i.key)
+	i.EncryptedItemKey, err = i.key.serialize()
 	if err != nil {
 		return errors.Wrap(err, "EncryptedItemKey")
 	}
@@ -124,32 +130,28 @@ func (i *Item) Seal(mk, ak string) error {
 	// Content
 	//
 
-	// Split item key in encryption key and auth key
-	ek := ik[:len(ik)/2]
-	ak = ik[len(ik)/2:]
-
 	note, err := json.Marshal(i.Note)
 	if err != nil {
 		return errors.Wrap(err, "could not serialize note")
 	}
 
-	i.content = vault{
-		version: i.Version,
-		uuid:    i.ID,
-		params:  i.AuthParams,
+	i.content, err = create(i.Version, i.ID)
+	if err != nil {
+		return errors.Wrap(err, "could not create content vault")
 	}
+	i.content.setup(i)
 
-	err = i.content.seal(note, ek, ak)
+	err = i.content.seal(contentKeyChain(i.Version, ik), note)
 	if err != nil {
 		return errors.Wrap(err, "Content")
 	}
 
-	i.Content, err = serialize(i.content)
+	i.Content, err = i.content.serialize()
 	return errors.Wrap(err, "Content")
 }
 
 // Unseal decrypts the item's Content into Note.
-func (i *Item) Unseal(mk, ak string) error {
+func (i *Item) Unseal(keychain *KeyChain) error {
 	//
 	// Key
 	//
@@ -163,10 +165,14 @@ func (i *Item) Unseal(mk, ak string) error {
 		return errors.Wrap(err, "EncryptedItemKey")
 	}
 	i.key = v
-	i.Version = v.version
-	i.AuthParams = v.params // Set current auth params as default
+	i.key.configure(i)
 
-	ik, err := i.key.unseal(mk, ak)
+	kkc := keychain
+	if i.Version == ProtocolVersion4 && i.ContentType == ContentTypeNote {
+		kkc = &KeyChain{Version: ProtocolVersion4, MasterKey: keychain.ItemsKey[i.ItemsKeyID]}
+	}
+
+	ik, err := i.key.unseal(kkc)
 	if err != nil {
 		return errors.Wrap(err, "EncryptedItemKey")
 	}
@@ -181,16 +187,25 @@ func (i *Item) Unseal(mk, ak string) error {
 	}
 	i.content = v
 
-	// Split item key in encryption key and auth key
-	ek := string(ik[:len(ik)/2])
-	ak = string(ik[len(ik)/2:])
-
-	note, err := i.content.unseal(ek, ak)
+	note, err := i.content.unseal(contentKeyChain(i.Version, string(ik)))
 	if err != nil {
 		return errors.Wrap(err, "Content")
 	}
 
-	i.Note = new(Note)
-	err = json.Unmarshal(note, i.Note)
-	return errors.Wrap(err, "could not parse note")
+	switch i.ContentType {
+	case ContentTypeItemsKey:
+		v := &struct {
+			ItemKeys string `json:"itemsKey"`
+		}{}
+
+		err = json.Unmarshal(note, v)
+		keychain.ItemsKey[i.ID] = v.ItemKeys
+		return errors.Wrap(err, "could not parse items key")
+	case ContentTypeNote:
+		i.Note = new(Note)
+		err = json.Unmarshal(note, i.Note)
+		return errors.Wrap(err, "could not parse note")
+	}
+
+	return errors.Errorf("Unsupported unseal for %s", i.ContentType)
 }
