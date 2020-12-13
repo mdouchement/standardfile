@@ -111,12 +111,7 @@ func (i *Item) Seal(keychain *KeyChain) error {
 	}
 	i.key.setup(i)
 
-	kkc := keychain
-	if i.Version == ProtocolVersion4 && i.ContentType == ContentTypeNote {
-		kkc = &KeyChain{Version: ProtocolVersion4, MasterKey: keychain.ItemsKey[i.ItemsKeyID]}
-	}
-
-	err = i.key.seal(kkc, []byte(ik))
+	err = i.key.seal(keyKeyChain(keychain, i), []byte(ik))
 	if err != nil {
 		return errors.Wrap(err, "EncryptedItemKey")
 	}
@@ -167,12 +162,7 @@ func (i *Item) Unseal(keychain *KeyChain) error {
 	i.key = v
 	i.key.configure(i)
 
-	kkc := keychain
-	if i.Version == ProtocolVersion4 && i.ContentType == ContentTypeNote {
-		kkc = &KeyChain{Version: ProtocolVersion4, MasterKey: keychain.ItemsKey[i.ItemsKeyID]}
-	}
-
-	ik, err := i.key.unseal(kkc)
+	ik, err := i.key.unseal(keyKeyChain(keychain, i))
 	if err != nil {
 		return errors.Wrap(err, "EncryptedItemKey")
 	}

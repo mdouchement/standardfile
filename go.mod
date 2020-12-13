@@ -12,7 +12,6 @@ require (
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
 	github.com/d1str0/pkcs7 v0.0.0-20200424205038-d65c16a5759a
-	github.com/davecgh/go-spew v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gcla/gowid v1.1.0
 	github.com/gdamore/tcell v1.4.0

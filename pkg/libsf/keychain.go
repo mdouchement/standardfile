@@ -17,6 +17,17 @@ type KeyChain struct {
 	ItemsKey  map[string]string // Since protocol 004
 }
 
+func keyKeyChain(k *KeyChain, i *Item) *KeyChain {
+	switch k.Version {
+	case ProtocolVersion4:
+		if i.ContentType == ContentTypeNote {
+			return &KeyChain{Version: k.Version, MasterKey: k.ItemsKey[i.ItemsKeyID]}
+		}
+	}
+
+	return k
+}
+
 func contentKeyChain(version string, k string) *KeyChain {
 	switch version {
 	case ProtocolVersion2:
