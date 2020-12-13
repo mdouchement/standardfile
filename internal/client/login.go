@@ -39,11 +39,11 @@ func Login() error {
 		return errors.Wrap(err, "could not read password from stdin")
 	}
 
-	pw, mk, ak := auth.SymmetricKeyPair(string(password))
-	cfg.Mk = mk
-	cfg.Ak = ak
+	keychain := auth.SymmetricKeyPair(string(password))
+	cfg.Mk = keychain.MasterKey
+	cfg.Ak = keychain.AuthKey
 
-	err = client.Login(auth.Email(), pw)
+	err = client.Login(auth.Email(), keychain.Password)
 	if err != nil {
 		return errors.Wrap(err, "could not login")
 	}

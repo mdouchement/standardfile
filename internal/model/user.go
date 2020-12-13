@@ -9,7 +9,7 @@ type User struct {
 	// Standardfile fields
 	Email         string `msgpack:"email"    storm:"unique"`
 	Password      string `msgpack:"password,omitempty"`
-	PasswordCost  int    `msgpack:"pw_cost"`
+	PasswordCost  int    `msgpack:"pw_cost,omitempty"`
 	PasswordNonce string `msgpack:"pw_nonce,omitempty"`
 	PasswordAuth  string `msgpack:"pw_auth,omitempty"`
 	Version       string `msgpack:"version"`
