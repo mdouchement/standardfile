@@ -10,17 +10,17 @@ import (
 
 // A KeyChain contains all the keys used for encryption and authentication.
 type KeyChain struct {
-	Version   string
-	Password  string // Servers' password
-	MasterKey string
-	AuthKey   string            // Before protocol 004
-	ItemsKey  map[string]string // Since protocol 004
+	Version   string            `json:"version"`
+	Password  string            `json:"password,omitempty"` // Server's password
+	MasterKey string            `json:"mk"`
+	AuthKey   string            `json:"ak,omitempty"` // Before protocol 004
+	ItemsKey  map[string]string `json:"-"`            // Since protocol 004
 }
 
 func keyKeyChain(k *KeyChain, i *Item) *KeyChain {
 	switch k.Version {
 	case ProtocolVersion4:
-		if i.ContentType == ContentTypeNote {
+		if i.ContentType != ContentTypeItemsKey {
 			return &KeyChain{Version: k.Version, MasterKey: k.ItemsKey[i.ItemsKeyID]}
 		}
 	}
@@ -72,5 +72,5 @@ func (k *KeyChain) GenerateItemEncryptionKey() (string, error) {
 		return hex.EncodeToString(ik), nil
 	}
 
-	return "", errors.Errorf("Unsupproted version: %s", k.Version)
+	return "", errors.Errorf("Unsupported version: %s", k.Version)
 }

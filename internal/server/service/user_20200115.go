@@ -31,6 +31,7 @@ func (s *userService20200115) Update(user *model.User, params UpdateUserParams) 
 func (s *userService20200115) Password(user *model.User, params UpdatePasswordParams) (Render, error) {
 	// FIXME: Reference implementation adds a restrictive condition
 	// https://github.com/standardnotes/syncing-server/pull/56/files#diff-21301a75c96c49e2bf016f4c63206521R12
+	// `upgrading_protocol_version && new_protocol_version == @user_class::SESSIONS_PROTOCOL_VERSION`
 
 	// FIXME: Reference implementation adds key_params in the response but it works without providing key_params.
 	// https://github.com/standardnotes/syncing-server/pull/111/files

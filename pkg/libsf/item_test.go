@@ -111,7 +111,7 @@ func TestItem_SealUnseal3(t *testing.T) {
 //
 //
 
-func TestItem_Unseal4_ItemsKeyy(t *testing.T) {
+func TestItem_Unseal4_ItemsKey(t *testing.T) {
 	auth := libsf.NewAuth("a@a.lan", libsf.ProtocolVersion4, "66d463427f417c5c8660733ffb1f7a4786d14fe3d7946b5116b5388f9cf80123", 0)
 	keychain := &libsf.KeyChain{
 		Version:   libsf.ProtocolVersion4,

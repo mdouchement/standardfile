@@ -146,6 +146,7 @@ func (i *Item) Seal(keychain *KeyChain) error {
 }
 
 // Unseal decrypts the item's Content into Note.
+// `SN|ItemsKey` are append in the provided KeyChain.
 func (i *Item) Unseal(keychain *KeyChain) error {
 	//
 	// Key
@@ -191,6 +192,8 @@ func (i *Item) Unseal(keychain *KeyChain) error {
 		err = json.Unmarshal(note, v)
 		keychain.ItemsKey[i.ID] = v.ItemKeys
 		return errors.Wrap(err, "could not parse items key")
+	case ContentTypeUserPreferences:
+		fallthrough
 	case ContentTypeNote:
 		i.Note = new(Note)
 		err = json.Unmarshal(note, i.Note)

@@ -22,6 +22,7 @@ func main() {
 		Args:    cobra.NoArgs,
 	}
 	c.AddCommand(loginCmd)
+	c.AddCommand(logoutCmd)
 	c.AddCommand(backupCmd)
 	c.AddCommand(unsealCmd)
 	c.AddCommand(noteCmd)
@@ -39,6 +40,15 @@ var (
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return client.Login()
+		},
+	}
+
+	logoutCmd = &cobra.Command{
+		Use:   "logout",
+		Short: "Logout from a StandardFile server session",
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, args []string) error {
+			return client.Logout()
 		},
 	}
 
