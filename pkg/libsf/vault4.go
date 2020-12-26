@@ -145,7 +145,7 @@ func (v *vault4) setup(i *Item) {
 
 func (v *vault4) configure(i *Item) {
 	i.Version = v.version
-	if i.ContentType == ContentTypeItemsKey {
+	if i.ContentType != ContentTypeItemsKey {
 		i.AuthParams = &v.auth.KeyParams
 	}
 }

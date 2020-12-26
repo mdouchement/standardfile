@@ -11,7 +11,7 @@ const (
 	APIVersion20200115 = "20200115"
 
 	// APIVersion is the version used by default client.
-	APIVersion = APIVersion20190520
+	APIVersion = APIVersion20200115
 )
 
 const (

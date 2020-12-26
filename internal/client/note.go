@@ -42,6 +42,12 @@ func Note() error {
 		return errors.Wrap(err, "could not reach StandardFile endpoint")
 	}
 	client.SetBearerToken(cfg.BearerToken)
+	if cfg.Session.Defined() {
+		client.SetSession(cfg.Session)
+		if err = Refresh(client, &cfg); err != nil {
+			return err
+		}
+	}
 
 	//
 	//
@@ -60,12 +66,24 @@ func Note() error {
 
 	synchronizer := initSynchronizer(client, cfg, ui)
 
+	// Append `SN|ItemsKey` to the KeyChain.
+	for _, item := range items.Retrieved {
+		if item.ContentType != libsf.ContentTypeItemsKey {
+			continue
+		}
+
+		err := item.Unseal(&cfg.KeyChain)
+		if err != nil {
+			return errors.Wrap(err, "could not unseal item SN|ItemsKey")
+		}
+	}
+
 	for _, item := range items.Retrieved {
 		switch item.ContentType {
 		case libsf.ContentTypeUserPreferences:
-			err := item.Unseal(&libsf.KeyChain{MasterKey: cfg.Mk, AuthKey: cfg.Ak})
+			err := item.Unseal(&cfg.KeyChain)
 			if err != nil {
-				return errors.Wrap(err, "could not unseal item")
+				return errors.Wrap(err, "could not unseal item SN|UserPreferences")
 			}
 
 			if err = item.Note.ParseRaw(); err != nil {
@@ -74,9 +92,9 @@ func Note() error {
 
 			ui.SortBy = item.Note.GetSortingField()
 		case libsf.ContentTypeNote:
-			err := item.Unseal(&libsf.KeyChain{MasterKey: cfg.Mk, AuthKey: cfg.Ak})
+			err := item.Unseal(&cfg.KeyChain)
 			if err != nil {
-				return errors.Wrap(err, "could not unseal item")
+				return errors.Wrap(err, "could not unseal item Note")
 			}
 
 			if err = item.Note.ParseRaw(); err != nil {
@@ -102,7 +120,7 @@ func initSynchronizer(client libsf.Client, cfg Config, ui *tui.TUI) func(item *l
 		item.Note.SetUpdatedAtNow()
 		item.Note.SaveRaw()
 
-		err := item.Seal(&libsf.KeyChain{MasterKey: cfg.Mk, AuthKey: cfg.Ak})
+		err := item.Seal(&cfg.KeyChain)
 		if err != nil {
 			ui.DisplayStatus(errors.Wrap(err, "could not seal item").Error())
 			return item.UpdatedAt

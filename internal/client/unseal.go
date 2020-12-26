@@ -39,7 +39,7 @@ func Unseal(filename string) error {
 			continue
 		}
 
-		err = rt.Unseal(&libsf.KeyChain{MasterKey: cfg.Mk, AuthKey: cfg.Ak})
+		err = rt.Unseal(&cfg.KeyChain)
 		if err != nil {
 			return errors.Wrap(err, "could not unseal item")
 		}

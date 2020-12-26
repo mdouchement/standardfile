@@ -25,6 +25,12 @@ func Backup() error {
 		return errors.Wrap(err, "could not reach StandardFile endpoint")
 	}
 	client.SetBearerToken(cfg.BearerToken)
+	if cfg.Session.Defined() {
+		client.SetSession(cfg.Session)
+		if err = Refresh(client, &cfg); err != nil {
+			return err
+		}
+	}
 
 	//
 	//
