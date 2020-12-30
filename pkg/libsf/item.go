@@ -178,7 +178,7 @@ func (i *Item) Unseal(keychain *KeyChain) error {
 	}
 	i.content = v
 
-	note, err := i.content.unseal(contentKeyChain(i.Version, string(ik)))
+	payload, err := i.content.unseal(contentKeyChain(i.Version, string(ik)))
 	if err != nil {
 		return errors.Wrap(err, "Content")
 	}
@@ -189,14 +189,14 @@ func (i *Item) Unseal(keychain *KeyChain) error {
 			ItemKeys string `json:"itemsKey"`
 		}{}
 
-		err = json.Unmarshal(note, v)
+		err = json.Unmarshal(payload, v)
 		keychain.ItemsKey[i.ID] = v.ItemKeys
 		return errors.Wrap(err, "could not parse items key")
 	case ContentTypeUserPreferences:
 		fallthrough
 	case ContentTypeNote:
 		i.Note = new(Note)
-		err = json.Unmarshal(note, i.Note)
+		err = json.Unmarshal(payload, i.Note)
 		return errors.Wrap(err, "could not parse note")
 	}
 
