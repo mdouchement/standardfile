@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/argon2"
@@ -21,6 +22,7 @@ type (
 	}
 
 	authenticatedData struct {
+		from      string
 		Version   string `json:"v"`
 		UserID    string `json:"u"`
 		KeyParams auth   `json:"kp,omitempty"`
@@ -66,10 +68,7 @@ func (v *vault4) seal(keychain *KeyChain, payload []byte) error {
 		return errors.Wrap(err, "could not decode EK")
 	}
 
-	auth, err := json.Marshal(v.auth)
-	if err != nil {
-		return errors.Wrap(err, "could not serialize auth")
-	}
+	auth := v.auth.toSortedKeysJSON()
 	v.rawauth = base64.StdEncoding.EncodeToString(auth)
 
 	//
@@ -141,13 +140,12 @@ func (v *vault4) unseal(keychain *KeyChain) ([]byte, error) {
 
 func (v *vault4) setup(i *Item) {
 	v.auth.KeyParams = *i.AuthParams.(*auth)
+	v.auth.from = i.ContentType
 }
 
 func (v *vault4) configure(i *Item) {
 	i.Version = v.version
-	if i.ContentType != ContentTypeItemsKey {
-		i.AuthParams = &v.auth.KeyParams
-	}
+	i.AuthParams = &v.auth.KeyParams
 }
 
 ////
@@ -156,6 +154,27 @@ func (v *vault4) configure(i *Item) {
 
 func (v *vault4) serialize() (string, error) {
 	return fmt.Sprintf("%s:%s:%s:%s", v.version, v.nonce, v.ciphertext, v.rawauth), nil
+}
+
+////
+///
+//
+
+func (d *authenticatedData) toSortedKeysJSON() []byte {
+	values := []string{}
+	if d.from == ContentTypeItemsKey {
+		auth := []string{}
+		auth = append(auth, fmt.Sprintf(`"identifier":"%s"`, d.KeyParams.FieldIdentifier))
+		auth = append(auth, fmt.Sprintf(`"origination":"%s"`, d.KeyParams.FieldOrigination))
+		auth = append(auth, fmt.Sprintf(`"pw_nonce":"%s"`, d.KeyParams.FieldNonce))
+		auth = append(auth, fmt.Sprintf(`"version":"%s"`, d.KeyParams.Version()))
+
+		values = append(values, fmt.Sprintf(`"kp":{%s}`, strings.Join(auth, ",")))
+	}
+	values = append(values, fmt.Sprintf(`"u":"%s"`, d.UserID))
+	values = append(values, fmt.Sprintf(`"v":"%s"`, d.Version))
+
+	return []byte(fmt.Sprintf("{%s}", strings.Join(values, ",")))
 }
 
 ////
