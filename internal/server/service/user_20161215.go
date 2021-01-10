@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server/serializer"
 )
@@ -15,26 +14,29 @@ type userService20161215 struct {
 }
 
 func (s *userService20161215) Register(params RegisterParams) (Render, error) {
-	return s.register(params, s.SuccessfulAuthentication)
+	return s.register(params, s.SuccessfulAuthentication, nil)
 }
 
 func (s *userService20161215) Login(params LoginParams) (Render, error) {
-	return s.login(params, s.SuccessfulAuthentication)
+	return s.login(params, s.SuccessfulAuthentication, nil)
 }
 
 func (s *userService20161215) Update(user *model.User, params UpdateUserParams) (Render, error) {
-	return s.update(user, params, s.SuccessfulAuthentication)
+	return s.update(user, params, s.SuccessfulAuthentication, nil)
 }
 
 func (s *userService20161215) Password(user *model.User, params UpdatePasswordParams) (Render, error) {
-	return s.password(user, params, s.SuccessfulAuthentication)
+	return s.password(user, params, s.SuccessfulAuthentication, nil)
 }
 
-func (s *userService20161215) SuccessfulAuthentication(u *model.User, _ Params) (Render, error) {
-	return echo.Map{
-		"user":  serializer.User(u),
-		"token": s.CreateJWT(u),
-	}, nil
+func (s *userService20161215) SuccessfulAuthentication(u *model.User, _ Params, response M) (Render, error) {
+	if response == nil {
+		response = M{}
+	}
+
+	response["user"] = serializer.User(u)
+	response["token"] = s.CreateJWT(u)
+	return response, nil
 }
 
 func (s *userService20161215) CreateJWT(u *model.User) string {

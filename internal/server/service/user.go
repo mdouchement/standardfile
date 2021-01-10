@@ -62,7 +62,7 @@ type (
 	}
 
 	// Success handler that generates response payload.
-	success func(u *model.User, p Params) (Render, error)
+	success func(u *model.User, p Params, r M) (Render, error)
 
 	userServiceBase struct {
 		db       database.Client
@@ -98,7 +98,7 @@ func NewUser(db database.Client, sessions session.Manager, version string) (s Us
 	return s
 }
 
-func (s *userServiceBase) register(params RegisterParams, success success) (Render, error) {
+func (s *userServiceBase) register(params RegisterParams, success success, response M) (Render, error) {
 	// Check if the email is free to use.
 	u, err := s.db.FindUserByMail(params.Email)
 	if err != nil && !s.db.IsNotFound(err) {
@@ -131,10 +131,10 @@ func (s *userServiceBase) register(params RegisterParams, success success) (Rend
 		return nil, errors.Wrap(err, "could not persist user")
 	}
 
-	return success(user, params.Params)
+	return success(user, params.Params, response)
 }
 
-func (s *userServiceBase) login(params LoginParams, success success) (Render, error) {
+func (s *userServiceBase) login(params LoginParams, success success, response M) (Render, error) {
 	// Retrieve user
 	user, err := s.db.FindUserByMail(params.Email)
 	if err != nil {
@@ -152,19 +152,19 @@ func (s *userServiceBase) login(params LoginParams, success success) (Render, er
 		return nil, errors.Wrap(err, "could not validate password")
 	}
 
-	return success(user, params.Params)
+	return success(user, params.Params, response)
 }
 
-func (s *userServiceBase) update(user *model.User, params UpdateUserParams, success success) (Render, error) {
+func (s *userServiceBase) update(user *model.User, params UpdateUserParams, success success, response M) (Render, error) {
 	s.apply(user, params)
 
 	if err := s.db.Save(user); err != nil {
 		return nil, errors.Wrap(err, "could not persist user")
 	}
-	return success(user, params.Params)
+	return success(user, params.Params, response)
 }
 
-func (s *userServiceBase) password(user *model.User, params UpdatePasswordParams, success success) (Render, error) {
+func (s *userServiceBase) password(user *model.User, params UpdatePasswordParams, success success, response M) (Render, error) {
 	// Verify CurrentPassword
 	if err := argon2.CompareHashAndPasswordString(user.Password, params.CurrentPassword); err != nil {
 		if err == argon2.ErrMismatchedHashAndPassword {
@@ -186,7 +186,7 @@ func (s *userServiceBase) password(user *model.User, params UpdatePasswordParams
 	if err := s.db.Save(user); err != nil {
 		return nil, errors.Wrap(err, "could not persist user")
 	}
-	return success(user, params.Params)
+	return success(user, params.Params, response)
 }
 
 // updates given user with given params.
