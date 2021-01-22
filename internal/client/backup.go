@@ -47,7 +47,7 @@ func Backup() error {
 	//
 	//
 
-	// No sync_token and limit are setted to get all items.
+	// No sync_token and limit are setted so we get all items.
 	items := libsf.NewSyncItems()
 	items, err = client.SyncItems(items)
 	if err != nil {

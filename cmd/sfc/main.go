@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/mdouchement/standardfile/internal/client"
 	"github.com/spf13/cobra"
@@ -18,7 +19,7 @@ func main() {
 	c := &cobra.Command{
 		Use:     "sfc",
 		Short:   "Standard File client (aka StandardNotes)",
-		Version: fmt.Sprintf("%s - build %.7s @ %s", version, revision, date),
+		Version: fmt.Sprintf("%s - build %.7s @ %s - %s", version, revision, date, runtime.Version()),
 		Args:    cobra.NoArgs,
 	}
 	c.AddCommand(loginCmd)

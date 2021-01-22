@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"path/filepath"
+	"runtime"
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/toml"
@@ -33,7 +34,7 @@ func main() {
 	c := &cobra.Command{
 		Use:     "standardfile",
 		Short:   "Standard File server for StandardNotes",
-		Version: fmt.Sprintf("%s - build %.7s @ %s", version, revision, date),
+		Version: fmt.Sprintf("%s - build %.7s @ %s - %s", version, revision, date, runtime.Version()),
 		Args:    cobra.ExactArgs(0),
 	}
 	initCmd.Flags().StringVarP(&cfg, "config", "c", "", "Configuration file")
