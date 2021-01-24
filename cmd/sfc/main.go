@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/mdouchement/standardfile/internal/client"
 	"github.com/spf13/cobra"
@@ -18,10 +19,11 @@ func main() {
 	c := &cobra.Command{
 		Use:     "sfc",
 		Short:   "Standard File client (aka StandardNotes)",
-		Version: fmt.Sprintf("%s - build %.7s @ %s", version, revision, date),
+		Version: fmt.Sprintf("%s - build %.7s @ %s - %s", version, revision, date, runtime.Version()),
 		Args:    cobra.NoArgs,
 	}
 	c.AddCommand(loginCmd)
+	c.AddCommand(logoutCmd)
 	c.AddCommand(backupCmd)
 	c.AddCommand(unsealCmd)
 	c.AddCommand(noteCmd)
@@ -39,6 +41,15 @@ var (
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, args []string) error {
 			return client.Login()
+		},
+	}
+
+	logoutCmd = &cobra.Command{
+		Use:   "logout",
+		Short: "Logout from a StandardFile server session",
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, args []string) error {
+			return client.Logout()
 		},
 	}
 

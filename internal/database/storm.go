@@ -73,6 +73,11 @@ func (c *strm) Save(m model.Model) error {
 	return errors.Wrap(c.db.Save(m), "could not save the model")
 }
 
+// Delete deletes the entry in database with the given model.
+func (c *strm) Delete(m model.Model) error {
+	return errors.Wrap(c.db.DeleteStruct(m), "could not delete the model")
+}
+
 // Close the database.
 func (c *strm) Close() error {
 	return c.db.Close()
@@ -101,6 +106,65 @@ func (c *strm) FindUserByMail(email string) (*model.User, error) {
 	return &user, nil
 }
 
+// FindSession returns the session for the given id (UUID).
+func (c *strm) FindSession(id string) (*model.Session, error) {
+	var session model.Session
+	if err := c.db.One("ID", id, &session); err != nil {
+		return nil, errors.Wrap(err, "find session by id")
+	}
+	return &session, nil
+}
+
+// FindSessionsByUserID returns all sessions for the given id and user id.
+func (c *strm) FindSessionByUserID(id, userID string) (*model.Session, error) {
+	var session model.Session
+	err := c.db.Select(q.Eq("ID", id), q.Eq("UserID", userID)).First(&session)
+	if err != nil {
+		return nil, errors.Wrap(err, "find session by id and user id")
+	}
+	return &session, nil
+}
+
+// FindSessionByAccessToken returns the session for the given id and access token.
+func (c *strm) FindSessionByAccessToken(id, token string) (*model.Session, error) {
+	var session model.Session
+	err := c.db.Select(q.Eq("ID", id), q.Eq("AccessToken", token)).First(&session)
+	if err != nil {
+		return nil, errors.Wrap(err, "find session by access token")
+	}
+	return &session, nil
+}
+
+// FindSessionByTokens returns the session for the given id, access and refresh token.
+func (c *strm) FindSessionByTokens(id, access, refresh string) (*model.Session, error) {
+	var session model.Session
+	err := c.db.Select(q.Eq("ID", id), q.Eq("AccessToken", access), q.Eq("RefreshToken", refresh)).First(&session)
+	if err != nil {
+		return nil, errors.Wrap(err, "find session by tokens")
+	}
+	return &session, nil
+}
+
+// FindSessionsByUserID returns all the sessions for the given user id.
+func (c *strm) FindSessionsByUserID(userID string) ([]*model.Session, error) {
+	sessions := make([]*model.Session, 0)
+	err := c.db.Select(q.Eq("UserID", userID)).OrderBy("CreatedAt").Find(&sessions)
+	if err != nil && !c.IsNotFound(err) {
+		return nil, errors.Wrap(err, "could not find sessions by user id")
+	}
+	return sessions, nil
+}
+
+// FindActiveSessionsByUserID returns all active sessions for the given user id.
+func (c *strm) FindActiveSessionsByUserID(userID string) ([]*model.Session, error) {
+	sessions := make([]*model.Session, 0)
+	err := c.db.Select(q.Eq("UserID", userID), q.Gt("ExpireAt", time.Now())).OrderBy("CreatedAt").Find(&sessions)
+	if err != nil && !c.IsNotFound(err) {
+		return nil, errors.Wrap(err, "could not find sessions by user id")
+	}
+	return sessions, nil
+}
+
 // FindItem returns the item for the given id (UUID).
 func (c *strm) FindItem(id string) (*model.Item, error) {
 	var item model.Item
@@ -119,6 +183,7 @@ func (c *strm) FindItemByUserID(id, userID string) (*model.Item, error) {
 
 // FindItemsByParams returns all the matching records for the given parameters.
 // It also returns a boolean to true if there is more items than the given limit.
+// limit equals to 0 means all items.
 func (c *strm) FindItemsByParams(userID, contentType string, updated time.Time, strictTime, noDeleted bool, limit int) ([]*model.Item, bool, error) {
 	query := []q.Matcher{q.Eq("UserID", userID)}
 
@@ -139,13 +204,17 @@ func (c *strm) FindItemsByParams(userID, contentType string, updated time.Time, 
 	}
 
 	items := make([]*model.Item, 0)
-	err := c.db.Select(query...).OrderBy("UpdatedAt").Reverse().Limit(limit + 1).Find(&items)
+	stmt := c.db.Select(query...).OrderBy("UpdatedAt").Reverse()
+	if limit > 0 {
+		stmt = stmt.Limit(limit + 1)
+	}
+	err := stmt.Find(&items)
 	if err != nil && !c.IsNotFound(err) {
 		return nil, false, errors.Wrap(err, "could not find items")
 	}
 
 	var overLimit bool
-	if len(items) > limit {
+	if limit != 0 && len(items) > limit {
 		items = items[:limit]
 		overLimit = true
 	}

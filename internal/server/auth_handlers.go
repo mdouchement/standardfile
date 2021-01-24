@@ -1,54 +1,24 @@
 package server
 
 import (
+	"crypto/sha256"
 	"log"
 	"net/http"
-	"time"
+	"os"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
-	argon2 "github.com/mdouchement/simple-argon2"
 	"github.com/mdouchement/standardfile/internal/database"
-	"github.com/mdouchement/standardfile/internal/model"
-	"github.com/mdouchement/standardfile/internal/server/serializer"
+	"github.com/mdouchement/standardfile/internal/server/service"
+	"github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/internal/sferror"
-	"github.com/pkg/errors"
+	"github.com/mdouchement/standardfile/pkg/libsf"
 )
 
-type (
-	// auth contains all authentication handlers.
-	auth struct {
-		db         database.Client
-		signingKey []byte
-	}
-
-	credentials struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	userParams struct {
-		Email                string `json:"email"`
-		RegistrationPassword string `json:"password"`
-		PasswordNonce        string `json:"pw_nonce"`
-		PasswordCost         int    `json:"pw_cost"`
-		Version              string `json:"version"`
-	}
-
-	updateAuth struct {
-		PasswordCost  int    `json:"pw_cost"`
-		PasswordNonce string `json:"pw_nonce"`
-		PasswordSalt  string `json:"pw_salt"`
-		Version       string `json:"version"`
-	}
-
-	updatePassword struct {
-		updateAuth
-		Identifier      string `json:"identifier"`
-		CurrentPassword string `json:"current_password"`
-		NewPassword     string `json:"new_password"`
-	}
-)
+// auth contains all authentication handlers.
+type auth struct {
+	db       database.Client
+	sessions session.Manager
+}
 
 ///// Register
 ////
@@ -58,10 +28,12 @@ type (
 // https://standardfile.org/#api-auth
 func (h *auth) Register(c echo.Context) error {
 	// Filter params
-	var params userParams
+	var params service.RegisterParams
 	if err := c.Bind(&params); err != nil {
 		return c.JSON(http.StatusUnauthorized, sferror.New("Could not get user's params."))
 	}
+	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
 
 	if params.Email == "" {
 		return c.JSON(http.StatusUnauthorized, sferror.New("No email provided."))
@@ -72,46 +44,17 @@ func (h *auth) Register(c echo.Context) error {
 	if params.PasswordNonce == "" {
 		return c.JSON(http.StatusUnauthorized, sferror.New("No nonce provided."))
 	}
-	if params.PasswordCost <= 0 {
+	if libsf.VersionLesser(libsf.APIVersion20200115, params.APIVersion) && params.PasswordCost <= 0 {
 		return c.JSON(http.StatusUnauthorized, sferror.New("No password cost provided."))
 	}
 
-	// Check if the email is free to use.
-	u, err := h.db.FindUserByMail(params.Email)
-	if err != nil && !h.db.IsNotFound(err) {
-		return errors.Wrap(err, "could not get access to database")
-	}
-	if u != nil {
-		// StatusUnauthorized is used in the reference server implem.
-		// (even if no authentication is needed here..)
-		return c.JSON(http.StatusUnauthorized, sferror.New("This email is already registered."))
-	}
-
-	// Initialize user
-	user := model.NewUser()
-	user.Email = params.Email
-	user.PasswordNonce = params.PasswordNonce
-	user.PasswordCost = params.PasswordCost
-	if params.Version != "" {
-		user.Version = params.Version
-	}
-
-	// Crypt password
-	user.Password, err = argon2.GenerateFromPasswordString(params.RegistrationPassword, argon2.Default)
+	service := service.NewUser(h.db, h.sessions, params.APIVersion)
+	register, err := service.Register(params)
 	if err != nil {
-		return errors.Wrap(err, "could not store user password safe")
-	}
-	user.PasswordUpdatedAt = time.Now().Unix()
-
-	// Persist the model
-	if err := h.db.Save(user); err != nil {
-		return errors.Wrap(err, "could not persist user")
+		return err
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"user":  serializer.User(user),
-		"token": h.TokenFromUser(user),
-	})
+	return c.JSON(http.StatusOK, register)
 }
 
 ///// Params
@@ -130,10 +73,12 @@ func (h *auth) Params(c echo.Context) error {
 	// Check if the user exists.
 	user, err := h.db.FindUserByMail(email)
 	if err != nil {
-		if h.db.IsNotFound(err) {
-			return c.JSON(http.StatusUnauthorized, sferror.New("Bad email provided."))
-		}
-		return errors.Wrap(err, "could not get user")
+		hostname, _ := os.Hostname()
+		return c.JSON(http.StatusOK, echo.Map{
+			"identifier": email,
+			"nonce":      sha256.Sum256([]byte(email + hostname)),
+			"version":    libsf.ProtocolVersion4,
+		})
 	}
 
 	// TODO 2FA
@@ -142,14 +87,17 @@ func (h *auth) Params(c echo.Context) error {
 	// Render
 	params := echo.Map{
 		"identifier": user.Email,
-		"pw_cost":    user.PasswordCost,
 		"version":    user.Version,
 	}
 
 	switch user.Version {
-	case model.Version2:
+	case libsf.ProtocolVersion2:
+		params["pw_cost"] = user.PasswordCost
 		params["pw_salt"] = user.PasswordSalt
-	case model.Version3:
+	case libsf.ProtocolVersion3:
+		params["pw_cost"] = user.PasswordCost
+		params["pw_nonce"] = user.PasswordNonce
+	case libsf.ProtocolVersion4:
 		params["pw_nonce"] = user.PasswordNonce
 	}
 
@@ -164,40 +112,45 @@ func (h *auth) Params(c echo.Context) error {
 // https://standardfile.org/#post-auth-sign_in
 func (h *auth) Login(c echo.Context) error {
 	// Filter params
-	var params credentials
+	var params service.LoginParams
 	if err := c.Bind(&params); err != nil {
 		log.Println("Could not get parameters:", err)
-		return c.JSON(http.StatusUnauthorized, sferror.New("Could not get credentials."))
+		return c.JSON(http.StatusBadRequest, sferror.New("Could not get credentials."))
 	}
+	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
 
 	if params.Email == "" || params.Password == "" {
-		return c.JSON(http.StatusUnauthorized, sferror.New("No email or password provided."))
+		return c.JSON(http.StatusBadRequest, sferror.New("No email or password provided."))
 	}
 
 	// TODO 2FA
 	// https://github.com/standardfile/ruby-server/blob/master/app/controllers/api/auth_controller.rb#L16
 
-	// Retrieve user
-	user, err := h.db.FindUserByMail(params.Email)
+	service := service.NewUser(h.db, h.sessions, params.APIVersion)
+	login, err := service.Login(params)
 	if err != nil {
-		if h.db.IsNotFound(err) {
-			return c.JSON(http.StatusUnauthorized, sferror.New("Invalid email or password."))
-		}
-		return errors.Wrap(err, "could not get user")
+		return err
 	}
 
-	// Verify password
-	if err = argon2.CompareHashAndPasswordString(user.Password, params.Password); err != nil {
-		if err == argon2.ErrMismatchedHashAndPassword {
-			return c.JSON(http.StatusUnauthorized, sferror.New("Invalid email or password."))
+	return c.JSON(http.StatusOK, login)
+}
+
+///// Logout
+////
+//
+
+// Logout used for terminates the current session.
+func (h *auth) Logout(c echo.Context) error {
+	session := currentSession(c)
+	if session != nil {
+		err := h.db.Delete(session)
+		if err != nil && h.db.IsNotFound(err) {
+			return err
 		}
-		return errors.Wrap(err, "could not validate password")
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"user":  serializer.User(user),
-		"token": h.TokenFromUser(user),
-	})
+	return c.NoContent(http.StatusNoContent)
 }
 
 ///// Update
@@ -207,25 +160,21 @@ func (h *auth) Login(c echo.Context) error {
 // Update used to updates a user.
 func (h *auth) Update(c echo.Context) error {
 	// Filter params
-	var params updateAuth
+	var params service.UpdateUserParams
 	if err := c.Bind(&params); err != nil {
 		log.Println("Could not get parameters:", err)
 		return c.JSON(http.StatusUnauthorized, sferror.New("Could not get parameters."))
 	}
+	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
 
-	// Update
-	user := currentUser(c)
-	h.apply(user, params)
-
-	// Persist the model
-	if err := h.db.Save(user); err != nil {
-		return errors.Wrap(err, "could not persist user")
+	service := service.NewUser(h.db, h.sessions, params.APIVersion)
+	update, err := service.Update(currentUser(c), params)
+	if err != nil {
+		return err
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"user":  serializer.User(user),
-		"token": h.TokenFromUser(user),
-	})
+	return c.JSON(http.StatusOK, update)
 }
 
 ///// Update Password
@@ -236,11 +185,13 @@ func (h *auth) Update(c echo.Context) error {
 // https://standardfile.org/#post-auth-change_pw
 func (h *auth) UpdatePassword(c echo.Context) error {
 	// Filter params
-	var params updatePassword
+	var params service.UpdatePasswordParams
 	if err := c.Bind(&params); err != nil {
 		log.Println("Could not get parameters:", err)
 		return c.JSON(http.StatusUnauthorized, sferror.New("Could not get parameters."))
 	}
+	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
 
 	// Check CurrentPassword presence.
 	if params.CurrentPassword == "" {
@@ -254,74 +205,11 @@ func (h *auth) UpdatePassword(c echo.Context) error {
 			sferror.New("Your new password is required to change your password. Please update your application if you do not see this option."))
 	}
 
-	// Verify CurrentPassword
-	user := currentUser(c)
-	if err := argon2.CompareHashAndPasswordString(user.Password, params.CurrentPassword); err != nil {
-		if err == argon2.ErrMismatchedHashAndPassword {
-			return c.JSON(http.StatusUnauthorized, sferror.New("The current password you entered is incorrect. Please try again."))
-		}
-		return errors.Wrap(err, "could not validate password")
-	}
-
-	// Crypt & update password
-	pw, err := argon2.GenerateFromPasswordString(params.NewPassword, argon2.Default)
+	service := service.NewUser(h.db, h.sessions, params.APIVersion)
+	password, err := service.Password(currentUser(c), params)
 	if err != nil {
-		return errors.Wrap(err, "could not store user password safe")
-	}
-	user.Password = pw
-	user.PasswordUpdatedAt = time.Now().Unix()
-
-	h.apply(user, params.updateAuth)
-
-	// Persist the model
-	if err := h.db.Save(user); err != nil {
-		return errors.Wrap(err, "could not persist user")
+		return err
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"user":  serializer.User(user),
-		"token": h.TokenFromUser(user),
-	})
-}
-
-/////////////////////
-//                 //
-// Helpers         //
-//                 //
-/////////////////////
-
-// TokenFromUser returns a JWT token for the given user.
-func (h *auth) TokenFromUser(u *model.User) string {
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["user_uuid"] = u.ID
-	// claims["pw_hash"] = fmt.Sprintf("%x", sha256.Sum256([]byte(u.Password))) // See readme
-	claims["iss"] = "github.com/mdouchement/standardfile"
-	claims["iat"] = time.Now().Unix() // Unix Timestamp in seconds
-
-	t, err := token.SignedString(h.signingKey)
-	if err != nil {
-		log.Fatalf("could not generate token: %s", err)
-	}
-	return t
-}
-
-// updates given user with given params.
-// works like strong_parameter.
-func (h *auth) apply(user *model.User, params updateAuth) {
-	if params.PasswordCost > 0 {
-		user.PasswordCost = params.PasswordCost
-	}
-
-	if params.PasswordNonce != "" {
-		user.PasswordNonce = params.PasswordNonce
-	}
-
-	if params.PasswordSalt != "" {
-		user.PasswordSalt = params.PasswordSalt
-	}
-
-	if params.Version != "" {
-		user.Version = params.Version
-	}
+	return c.JSON(http.StatusOK, password)
 }

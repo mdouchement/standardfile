@@ -22,25 +22,32 @@ type (
 	Auth interface {
 		// Email returns the email used for authentication.
 		Email() string
+		// Identifier returns the identifier (email) used for authentication.
+		Identifier() string
 		// Version returns the encryption scheme version.
 		Version() string
 		// IntegrityCheck checks if the Auth params are valid.
 		IntegrityCheck() error
-		// SymmetricKeyPair returns the password, master_key and auth_key for the given uip (plaintext password of the user).
+		// SymmetricKeyPair returns a KeyChain for the given uip (plaintext password of the user).
 		// https://github.com/standardfile/standardfile.github.io/blob/master/doc/spec.md#client-instructions
-		SymmetricKeyPair(uip string) (pw, mk, ak string)
+		SymmetricKeyPair(uip string) *KeyChain
 	}
 
 	auth struct {
-		FieldEmail   string `json:"identifier"`
-		FieldVersion string `json:"version"`
-		FieldCost    int    `json:"pw_cost"`
-		FieldNonce   string `json:"pw_nonce"`
+		FieldVersion     string `json:"version"`
+		FieldIdentifier  string `json:"identifier"`
+		FieldCost        int    `json:"pw_cost,omitempty"` // Before protocol 004
+		FieldNonce       string `json:"pw_nonce"`
+		FieldOrigination string `json:"origination,omitempty"` // Since protocol 004
 	}
 )
 
 func (a *auth) Email() string {
-	return a.FieldEmail
+	return a.FieldIdentifier
+}
+
+func (a *auth) Identifier() string {
+	return a.FieldIdentifier
 }
 
 func (a *auth) Version() string {
@@ -49,15 +56,17 @@ func (a *auth) Version() string {
 
 func (a *auth) IntegrityCheck() error {
 	switch a.FieldVersion {
-	case "003":
+	case ProtocolVersion4:
+		// nothing
+	case ProtocolVersion3:
 		if a.FieldCost < 110000 {
 			return ErrLowPasswordCost
 		}
-	case "002":
+	case ProtocolVersion2:
 		if a.FieldCost < 3000 {
 			return ErrLowPasswordCost
 		}
-	case "001":
+	case ProtocolVersion1:
 		fallthrough
 	default:
 		return ErrUnsupportedVersion
@@ -66,8 +75,17 @@ func (a *auth) IntegrityCheck() error {
 	return nil
 }
 
-func (a *auth) SymmetricKeyPair(uip string) (pw, mk, ak string) {
-	token := fmt.Sprintf("%s:SF:%s:%d:%s", a.FieldEmail, a.FieldVersion, a.FieldCost, a.FieldNonce)
+func (a *auth) SymmetricKeyPair(uip string) *KeyChain {
+	switch a.FieldVersion {
+	case ProtocolVersion4:
+		return a.SymmetricKeyPair4(uip)
+	default:
+		return a.SymmetricKeyPair3(uip)
+	}
+}
+
+func (a *auth) SymmetricKeyPair3(uip string) *KeyChain {
+	token := fmt.Sprintf("%s:SF:%s:%d:%s", a.FieldIdentifier, a.FieldVersion, a.FieldCost, a.FieldNonce)
 	salt := fmt.Sprintf("%x", sha256.Sum256([]byte(token))) // Hexadecimal sum
 
 	// We need 3 keys of 32 length each.
@@ -75,5 +93,26 @@ func (a *auth) SymmetricKeyPair(uip string) (pw, mk, ak string) {
 	key := hex.EncodeToString(k)
 	s := len(key) / 3
 
-	return key[:s], key[s : s*2], key[s*2:]
+	return &KeyChain{
+		Version:   a.FieldVersion,
+		Password:  key[:s],
+		MasterKey: key[s : s*2],
+		AuthKey:   key[s*2:],
+	}
+}
+
+func (a *auth) SymmetricKeyPair4(uip string) *KeyChain {
+	payload := fmt.Sprintf("%s:%s", a.FieldIdentifier, a.FieldNonce)
+	hash := sha256.Sum256([]byte(payload))
+	// Taking the first 16 bytes of the hash is the same
+	// as taking the 32 first characters of the hexa salt as described in specifications.
+	salt := hash[:16]
+
+	key, _ := kdf4([]byte(uip), salt)
+	return &KeyChain{
+		Version:   a.FieldVersion,
+		MasterKey: hex.EncodeToString(key[:32]),
+		Password:  hex.EncodeToString(key[32:]),
+		ItemsKey:  map[string]string{},
+	}
 }

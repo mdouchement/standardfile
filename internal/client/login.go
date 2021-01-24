@@ -39,15 +39,15 @@ func Login() error {
 		return errors.Wrap(err, "could not read password from stdin")
 	}
 
-	pw, mk, ak := auth.SymmetricKeyPair(string(password))
-	cfg.Mk = mk
-	cfg.Ak = ak
+	cfg.KeyChain = *auth.SymmetricKeyPair(string(password))
 
-	err = client.Login(auth.Email(), pw)
+	err = client.Login(auth.Email(), cfg.KeyChain.Password)
 	if err != nil {
 		return errors.Wrap(err, "could not login")
 	}
-	cfg.BearerToken = client.BearerToken()
+	cfg.BearerToken = client.BearerToken() // JWT or access token
+	cfg.Session = client.Session()         // Can be empty if a JWT is used
 
+	cfg.KeyChain.Password = "" // Bearer is used instead
 	return Save(cfg)
 }

@@ -5,7 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/database"
-	"github.com/mdouchement/standardfile/internal/service"
+	"github.com/mdouchement/standardfile/internal/server/service"
 	"github.com/mdouchement/standardfile/internal/sferror"
 )
 
@@ -26,6 +26,8 @@ func (h *item) Sync(c echo.Context) error {
 	if err := c.Bind(&params); err != nil {
 		return c.JSON(http.StatusBadRequest, sferror.New("Could not get syncing params."))
 	}
+	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
 
 	sync := service.NewSync(h.db, currentUser(c), params)
 	if err := sync.Execute(); err != nil {

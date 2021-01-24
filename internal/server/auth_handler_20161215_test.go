@@ -1,17 +1,21 @@
 package server_test
 
 import (
+	"crypto/sha256"
+	"encoding/json"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/appleboy/gofight"
+	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fastjson"
 )
 
-func TestRequestRegistration(t *testing.T) {
+func TestRequestRegistration20161215(t *testing.T) {
 	engine, _, r, cleanup := setup()
 	defer cleanup()
 
@@ -70,8 +74,8 @@ func TestRequestRegistration(t *testing.T) {
 	})
 }
 
-func TestRequestParams(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+func TestRequestParams20161215(t *testing.T) {
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
 
 	r.GET("/auth/params").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
@@ -80,11 +84,24 @@ func TestRequestParams(t *testing.T) {
 	})
 
 	r.GET("/auth/params?email=nobody@nowhere.lan").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.JSONEq(t, `{"error":{"message":"Bad email provided."}}`, r.Body.String())
+		assert.Equal(t, http.StatusOK, r.Code)
+
+		hostname, err := os.Hostname()
+		assert.NoError(t, err)
+
+		params := echo.Map{
+			"identifier": "nobody@nowhere.lan",
+			"nonce":      sha256.Sum256([]byte("nobody@nowhere.lan" + hostname)),
+			"version":    "004",
+		}
+
+		payload, err := json.Marshal(params)
+		assert.NoError(t, err)
+
+		assert.JSONEq(t, string(payload), r.Body.String())
 	})
 
-	createUser(ioc)
+	createUser(ctrl)
 
 	r.GET("/auth/params?email=george.abitbol@nowhere.lan").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusOK, r.Code)
@@ -92,13 +109,13 @@ func TestRequestParams(t *testing.T) {
 	})
 }
 
-func TestRequestLogin(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+func TestRequestLogin20161215(t *testing.T) {
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
-	user := createUser(ioc)
+	user := createUser(ctrl)
 
 	r.POST("/auth/sign_in").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.Equal(t, http.StatusBadRequest, r.Code)
 		assert.JSONEq(t, `{"error":{"message":"Could not get credentials."}}`, r.Body.String())
 	})
 
@@ -108,13 +125,13 @@ func TestRequestLogin(t *testing.T) {
 	}
 
 	r.POST("/auth/sign_in").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.Equal(t, http.StatusBadRequest, r.Code)
 		assert.JSONEq(t, `{"error":{"message":"No email or password provided."}}`, r.Body.String())
 	})
 
 	params["email"] = "george.abitbol@nowhere.lan"
 	r.POST("/auth/sign_in").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.Equal(t, http.StatusBadRequest, r.Code)
 		assert.JSONEq(t, `{"error":{"message":"No email or password provided."}}`, r.Body.String())
 	})
 
@@ -148,18 +165,45 @@ func TestRequestLogin(t *testing.T) {
 	})
 }
 
-func TestRequestUpdate(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+func TestRequestLogout20161215(t *testing.T) {
+	engine, ctrl, r, cleanup := setup()
+	defer cleanup()
+
+	user := createUser(ctrl)
+
+	//
+
+	r.POST("/auth/sign_out").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
+	})
+
+	header := gofight.H{
+		"Authorization": "Bearer " + server.CreateJWT(ctrl, user),
+	}
+
+	r.POST("/auth/sign_out").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusNoContent, r.Code)
+	})
+
+	// Sign out is only for sessions, so with a JWT we are still logged.
+	r.POST("/auth/sign_out").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusNoContent, r.Code)
+	})
+}
+
+func TestRequestUpdate20161215(t *testing.T) {
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
 
 	r.POST("/auth/update").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusBadRequest, r.Code)
-		assert.JSONEq(t, `{"error":{"message":"missing or malformed jwt"}}`, r.Body.String())
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
 	})
 
-	user := createUser(ioc)
+	user := createUser(ctrl)
 	header := gofight.H{
-		"Authorization": "Bearer " + server.TokenFromUser(ioc, user),
+		"Authorization": "Bearer " + server.CreateJWT(ctrl, user),
 	}
 	params := gofight.D{
 		"pw_cost": user.PasswordCost * 2,
@@ -171,7 +215,7 @@ func TestRequestUpdate(t *testing.T) {
 		v, err := fastjson.Parse(r.Body.String())
 		assert.NoError(t, err)
 
-		assert.Equal(t, server.TokenFromUser(ioc, user), string(v.Get("token").GetStringBytes()))
+		assert.Equal(t, server.CreateJWT(ctrl, user), string(v.Get("token").GetStringBytes()))
 		assert.Equal(t, user.Version, string(v.Get("user", "version").GetStringBytes()))
 		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
 		assert.Equal(t, user.Email, string(v.Get("user", "email").GetStringBytes()))
@@ -188,18 +232,18 @@ func TestRequestUpdate(t *testing.T) {
 	})
 }
 
-func TestRequestUpdatePassword(t *testing.T) {
-	engine, ioc, r, cleanup := setup()
+func TestRequestUpdatePassword20161215(t *testing.T) {
+	engine, ctrl, r, cleanup := setup()
 	defer cleanup()
 
 	r.POST("/auth/change_pw").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusBadRequest, r.Code)
-		assert.JSONEq(t, `{"error":{"message":"missing or malformed jwt"}}`, r.Body.String())
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
 	})
 
-	user := createUser(ioc)
+	user := createUser(ctrl)
 	header := gofight.H{
-		"Authorization": "Bearer " + server.TokenFromUser(ioc, user),
+		"Authorization": "Bearer " + server.CreateJWT(ctrl, user),
 	}
 	params := gofight.D{
 		"identifier": user.Email,
@@ -231,10 +275,10 @@ func TestRequestUpdatePassword(t *testing.T) {
 		v, err := fastjson.Parse(r.Body.String())
 		assert.NoError(t, err)
 
-		user, err = ioc.Database.FindUser(user.ID) // reload user
+		user, err = ctrl.Database.FindUser(user.ID) // reload user
 		assert.NoError(t, err)
 
-		assert.Equal(t, server.TokenFromUser(ioc, user), string(v.Get("token").GetStringBytes()))
+		assert.Equal(t, server.CreateJWT(ctrl, user), string(v.Get("token").GetStringBytes()))
 		assert.Equal(t, user.Version, string(v.Get("user", "version").GetStringBytes()))
 		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
 		assert.Equal(t, user.Email, string(v.Get("user", "email").GetStringBytes()))

@@ -2,14 +2,22 @@ package main
 
 import (
 	"fmt"
+	"hash"
+	"io"
 	"log"
-	"os"
 	"path/filepath"
+	"runtime"
 
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/toml"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/server"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/hkdf"
 )
 
 const dbname = "standardfile.db"
@@ -19,24 +27,23 @@ var (
 	revision = "none"
 	date     = "unknown"
 
-	binding string
-	port    string
-	noreg   bool
+	cfg string
 )
 
 func main() {
 	c := &cobra.Command{
 		Use:     "standardfile",
 		Short:   "Standard File server for StandardNotes",
-		Version: fmt.Sprintf("%s - build %.7s @ %s", version, revision, date),
+		Version: fmt.Sprintf("%s - build %.7s @ %s - %s", version, revision, date, runtime.Version()),
 		Args:    cobra.ExactArgs(0),
 	}
+	initCmd.Flags().StringVarP(&cfg, "config", "c", "", "Configuration file")
 	c.AddCommand(initCmd)
+
+	reindexCmd.Flags().StringVarP(&cfg, "config", "c", "", "Configuration file")
 	c.AddCommand(reindexCmd)
 
-	serverCmd.Flags().StringVarP(&binding, "binding", "b", "0.0.0.0", "Server's binding")
-	serverCmd.Flags().StringVarP(&port, "port", "p", "5000", "Server's port")
-	serverCmd.Flags().BoolVarP(&noreg, "noreg", "", false, "Disable registration")
+	serverCmd.Flags().StringVarP(&cfg, "config", "c", "", "Configuration file")
 	c.AddCommand(serverCmd)
 
 	if err := c.Execute(); err != nil {
@@ -44,12 +51,28 @@ func main() {
 	}
 }
 
-func dbnameWithEnv() string {
-	p := os.Getenv("DATABASE_PATH")
-	if len(p) == 0 {
+func dbnameWithPath(path string) string {
+	if len(path) == 0 {
 		return dbname
 	}
-	return filepath.Join(p, dbname)
+	return filepath.Join(path, dbname)
+}
+
+func kdf(l int, k []byte) []byte {
+	h, err := blake2b.New256(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	payload := make([]byte, l)
+
+	kdf := hkdf.New(func() hash.Hash { return h }, k, nil, nil)
+	_, err = io.ReadFull(kdf, payload)
+	if err != nil {
+		panic(err)
+	}
+
+	return payload
 }
 
 var (
@@ -58,7 +81,12 @@ var (
 		Short: "Init the database",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return database.StormInit(dbnameWithEnv())
+			konf := koanf.New(".")
+			if err := konf.Load(file.Provider(cfg), toml.Parser()); err != nil {
+				return err
+			}
+
+			return database.StormInit(dbnameWithPath(konf.String("database_path")))
 		},
 	}
 
@@ -68,7 +96,12 @@ var (
 		Short: "Reindex the database",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return database.StormReIndex(dbnameWithEnv())
+			konf := koanf.New(".")
+			if err := konf.Load(file.Provider(cfg), toml.Parser()); err != nil {
+				return err
+			}
+
+			return database.StormReIndex(dbnameWithPath(konf.String("database_path")))
 		},
 	}
 
@@ -79,29 +112,39 @@ var (
 		Short: "Start server",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(_ *cobra.Command, _ []string) error {
-			secret := os.Getenv("SECRET_KEY")
-			if len(secret) == 0 {
-				return errors.New("SECRET_KEY not found")
+			konf := koanf.New(".")
+			if err := konf.Load(file.Provider(cfg), yaml.Parser()); err != nil {
+				return err
 			}
 
-			db, err := database.StormOpen(dbnameWithEnv())
+			if konf.String("secret_key") == "" {
+				return errors.New("secret_key not found")
+			}
+
+			if konf.String("session.secret") == "" {
+				return errors.New("session secret not found")
+			}
+
+			db, err := database.StormOpen(dbnameWithPath(konf.String("database_path")))
 			if err != nil {
 				return errors.Wrap(err, "could not open database")
 			}
 			defer db.Close()
 
-			engine := server.EchoEngine(server.IOC{
-				Version:        version,
-				Database:       db,
-				NoRegistration: noreg,
-				SigningKey:     []byte(secret),
+			engine := server.EchoEngine(server.Controller{
+				Version:                    version,
+				Database:                   db,
+				NoRegistration:             konf.Bool("no_registration"),
+				SigningKey:                 konf.MustBytes("secret_key"),
+				SessionSecret:              kdf(32, konf.MustBytes("session.secret")),
+				AccessTokenExpirationTime:  konf.MustDuration("session.access_token_ttl"),
+				RefreshTokenExpirationTime: konf.MustDuration("session.refresh_token_ttl"),
 			})
 			server.PrintRoutes(engine)
 
-			listen := fmt.Sprintf("%s:%s", binding, port)
-			log.Printf("Server listening on %s", listen)
+			log.Printf("Server listening on %s", konf.String("address"))
 			return errors.Wrap(
-				engine.Start(listen),
+				engine.Start(konf.String("address")),
 				"could not run server",
 			)
 		},

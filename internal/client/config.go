@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/chzyer/readline"
 	sargon2 "github.com/mdouchement/simple-argon2"
+	"github.com/mdouchement/standardfile/pkg/libsf"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
@@ -20,17 +22,26 @@ const (
 
 // A Config holds client's configuration.
 type Config struct {
-	Endpoint    string `json:"endpoint"`
-	Email       string `json:"email"`
-	BearerToken string `json:"bearer_token"`
-	Mk          string `json:"mk"`
-	Ak          string `json:"Ak"` // AuthKey
+	Endpoint    string         `json:"endpoint"`
+	Email       string         `json:"email"`
+	BearerToken string         `json:"bearer_token"` // JWT used before 20200115
+	Session     libsf.Session  `json:"session"`      // Since 20200115
+	KeyChain    libsf.KeyChain `json:"keychain"`
+}
+
+// Remove removes the credential files from the current directory.
+func Remove() error {
+	return os.Remove(credentialsfile)
 }
 
 // Load gets the configuration from the current folder according to `credentialsfile` const.
 func Load() (Config, error) {
 	fmt.Println("Loading credentials from " + credentialsfile)
-	var cfg Config
+	cfg := Config{
+		KeyChain: libsf.KeyChain{
+			ItemsKey: make(map[string]string),
+		},
+	}
 
 	ciphertext, err := ioutil.ReadFile(credentialsfile)
 	if err != nil {
@@ -123,4 +134,23 @@ func Save(cfg Config) error {
 	}
 
 	return errors.Wrap(f.Sync(), "could not store credentials")
+}
+
+// Refresh refreshes the session if needed.
+func Refresh(client libsf.Client, cfg *Config) error {
+	if !cfg.Session.AccessExpiredAt(time.Now().Add(time.Hour)) {
+		return nil
+	}
+
+	fmt.Println("Refreshing the session")
+
+	session, err := client.RefreshSession(cfg.Session.AccessToken, cfg.Session.RefreshToken)
+	if err != nil {
+		return errors.Wrap(err, "could not refresh session")
+	}
+	cfg.Session = *session
+	client.SetSession(cfg.Session)
+
+	err = Save(*cfg)
+	return errors.Wrap(err, "could not save refreshed session")
 }

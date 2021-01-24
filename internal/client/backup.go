@@ -25,6 +25,12 @@ func Backup() error {
 		return errors.Wrap(err, "could not reach StandardFile endpoint")
 	}
 	client.SetBearerToken(cfg.BearerToken)
+	if cfg.Session.Defined() {
+		client.SetSession(cfg.Session)
+		if err = Refresh(client, &cfg); err != nil {
+			return err
+		}
+	}
 
 	//
 	//
@@ -41,8 +47,8 @@ func Backup() error {
 	//
 	//
 
+	// No sync_token and limit are setted so we get all items.
 	items := libsf.NewSyncItems()
-	items.Limit = 10000000000000000 // Get all items
 	items, err = client.SyncItems(items)
 	if err != nil {
 		return errors.Wrap(err, "could not get items")

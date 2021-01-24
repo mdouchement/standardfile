@@ -5,9 +5,9 @@ package libsf
 // NewAuth returns a new Auth with the given parameters for test purpose.
 func NewAuth(email, version, nonce string, cost int) Auth {
 	return &auth{
-		FieldEmail:   email,
-		FieldVersion: version,
-		FieldCost:    cost,
-		FieldNonce:   nonce,
+		FieldIdentifier: email,
+		FieldVersion:    version,
+		FieldCost:       cost,
+		FieldNonce:      nonce,
 	}
 }
