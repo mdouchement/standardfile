@@ -31,5 +31,4 @@ RUN mkdir -p ${DATABASE_PATH}
 COPY --from=build-env /go/src/github.com/mdouchement/standardfile/dist/standardfile /usr/local/bin/
 
 EXPOSE 5000
-CMD ["standardfile", "server", "-p", "5000"]
-# CMD ["standardfile", "server", "-p", "5000", "--noreg"]
+CMD ["standardfile", "server", "-c", "/etc/standardfile/standardfile.yml"]
