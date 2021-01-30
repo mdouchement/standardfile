@@ -1,5 +1,5 @@
 # build stage
-FROM golang:1.14-alpine as build-env
+FROM golang:alpine as build-env
 MAINTAINER mdouchement
 
 RUN apk upgrade
