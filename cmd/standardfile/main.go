@@ -59,15 +59,18 @@ func dbnameWithPath(path string) string {
 }
 
 func kdf(l int, k []byte) []byte {
-	h, err := blake2b.New256(nil)
-	if err != nil {
-		panic(err)
+	nhash := func() hash.Hash {
+		h, err := blake2b.New256(nil)
+		if err != nil {
+			panic(err)
+		}
+		return h
 	}
 
 	payload := make([]byte, l)
 
-	kdf := hkdf.New(func() hash.Hash { return h }, k, nil, nil)
-	_, err = io.ReadFull(kdf, payload)
+	kdf := hkdf.New(nhash, k, nil, nil)
+	_, err := io.ReadFull(kdf, payload)
 	if err != nil {
 		panic(err)
 	}
