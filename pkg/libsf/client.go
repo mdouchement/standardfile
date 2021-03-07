@@ -62,7 +62,7 @@ func (c *client) GetAuthParams(email string) (Auth, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not parse endpoint")
 	}
-	u.Path = "/auth/params"
+	u.Path += "/auth/params"
 
 	query := url.Values{}
 	query.Set("email", email)
@@ -102,7 +102,7 @@ func (c *client) Login(email, password string) error {
 	if err != nil {
 		return errors.Wrap(err, "could not parse endpoint")
 	}
-	u.Path = "/auth/sign_in"
+	u.Path += "/auth/sign_in"
 
 	//
 	// Build request
@@ -158,7 +158,7 @@ func (c *client) Logout() error {
 	if err != nil {
 		return errors.Wrap(err, "could not parse endpoint")
 	}
-	u.Path = "/auth/sign_out"
+	u.Path += "/auth/sign_out"
 
 	//
 	// Build request
@@ -208,7 +208,7 @@ func (c *client) RefreshSession(access, refresh string) (*Session, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not parse endpoint")
 	}
-	u.Path = "/session/refresh"
+	u.Path += "/session/refresh"
 
 	//
 	// Build request
@@ -255,7 +255,7 @@ func (c *client) SyncItems(items SyncItems) (SyncItems, error) {
 	if err != nil {
 		return items, errors.Wrap(err, "could not parse endpoint")
 	}
-	u.Path = "/items/sync"
+	u.Path += "/items/sync"
 
 	//
 	// Build request
