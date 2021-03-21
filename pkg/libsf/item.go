@@ -25,21 +25,21 @@ type (
 	SyncItems struct {
 		// Common fields
 		API              string `json:"api"` // Since 20190520
-		ComputeIntegrity bool   `json:"compute_integrity"`
-		Limit            int    `json:"limit"`
-		SyncToken        string `json:"sync_token"`
-		CursorToken      string `json:"cursor_token"`
-		ContentType      string `json:"content_type"` // optional, only return items of these type if present
+		ComputeIntegrity bool   `json:"compute_integrity,omitempty"`
+		Limit            int    `json:"limit,omitempty"`
+		SyncToken        string `json:"sync_token,omitempty"`
+		CursorToken      string `json:"cursor_token,omitempty"`
+		ContentType      string `json:"content_type,omitempty"` // optional, only return items of these type if present
 
 		// Fields used for request
-		Items []*Item `json:"items"`
+		Items []*Item `json:"items,omitempty"`
 
 		// Fields used in response
-		Retrieved []*Item `json:"retrieved_items"`
-		Saved     []*Item `json:"saved_items"`
+		Retrieved []*Item `json:"retrieved_items,omitempty"`
+		Saved     []*Item `json:"saved_items,omitempty"`
 
-		Unsaved   []*UnsavedItem  `json:"unsaved"`   // Before 20190520 (Since 20161215 at least)
-		Conflicts []*ConflictItem `json:"conflicts"` // Since 20190520
+		Unsaved   []*UnsavedItem  `json:"unsaved,omitempty"`   // Before 20190520 (Since 20161215 at least)
+		Conflicts []*ConflictItem `json:"conflicts,omitempty"` // Since 20190520
 	}
 
 	// An Item holds all the data created by end user.
