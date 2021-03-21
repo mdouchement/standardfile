@@ -39,14 +39,15 @@ func (s Session) RefreshExpired() bool {
 type sessionTime time.Time
 
 func (t *sessionTime) UnmarshalJSON(s []byte) error {
-	r := strings.Replace(string(s), `"`, ``, -1)
+	r := strings.ReplaceAll(string(s), `"`, ``)
 	tt, err := time.Parse(time.RFC3339, r)
+
 	if err != nil {
 		q, err := strconv.ParseInt(string(s), 10, 64)
 		if err != nil {
 			return err
 		}
-		*(*time.Time)(t) = time.Unix(q/1000, 0)
+		*(*time.Time)(t) = time.Unix(0, q*1000000)
 		return nil
 	}
 	*(*time.Time)(t) = tt
