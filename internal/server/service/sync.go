@@ -120,7 +120,7 @@ func (s *syncServiceBase) computeDataSignature() (string, error) {
 	timestamps := []string{}
 	for _, item := range items {
 		// Unix timestamp in milliseconds (like MRI's `Time.now.to_datetime.strftime('%Q')`)
-		timestamps = append(timestamps, fmt.Sprintf("%d", item.UpdatedAt.UnixNano()/int64(time.Millisecond)))
+		timestamps = append(timestamps, fmt.Sprintf("%d", libsf.UnixMillisecond(*item.UpdatedAt)))
 	}
 
 	sort.SliceStable(timestamps, func(i, j int) bool {

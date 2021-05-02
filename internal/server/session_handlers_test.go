@@ -10,6 +10,7 @@ import (
 	"github.com/appleboy/gofight"
 	"github.com/gofrs/uuid"
 	"github.com/mdouchement/standardfile/internal/server/session"
+	"github.com/mdouchement/standardfile/pkg/libsf"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -74,10 +75,10 @@ func TestRequestSessionList(t *testing.T) {
 
 type SessionRefresh struct {
 	Session struct {
-		AccessToken       string    `json:"access_token"`
-		RefreshToken      string    `json:"refresh_token"`
-		AccessExpiration  time.Time `json:"access_expiration"`
-		RefreshExpiration time.Time `json:"refresh_expiration"`
+		AccessToken       string `json:"access_token"`
+		RefreshToken      string `json:"refresh_token"`
+		AccessExpiration  int64  `json:"access_expiration"`
+		RefreshExpiration int64  `json:"refresh_expiration"`
 	} `json:"session"`
 }
 
@@ -127,9 +128,9 @@ func TestRequestSessionRegenerate(t *testing.T) {
 		assert.NotEmpty(t, refresh.Session.RefreshToken)
 		assert.NotEqual(t, session.RefreshToken, refresh.Session.RefreshToken)
 
-		assert.Greater(t, refresh.Session.RefreshExpiration.UnixNano(), session.ExpireAt.UnixNano())
+		assert.Greater(t, refresh.Session.RefreshExpiration, libsf.UnixMillisecond(session.ExpireAt))
 		assert.InEpsilon(t, session.CreatedAt.UnixNano(), session.ExpireAt.Add(-ctrl.RefreshTokenExpirationTime).UnixNano(), 1000)
-		assert.Greater(t, refresh.Session.AccessExpiration.UnixNano(), sessions.AccessTokenExprireAt(session).UnixNano())
+		assert.Greater(t, refresh.Session.AccessExpiration, libsf.UnixMillisecond(sessions.AccessTokenExprireAt(session)))
 		assert.InEpsilon(t, session.CreatedAt.UnixNano(), sessions.AccessTokenExprireAt(session).Add(-ctrl.AccessTokenExpirationTime).UnixNano(), 1000)
 	})
 }

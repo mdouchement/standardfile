@@ -8,6 +8,7 @@ import (
 	"github.com/mdouchement/standardfile/internal/server/serializer"
 	sessionpkg "github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/internal/sferror"
+	"github.com/mdouchement/standardfile/pkg/libsf"
 	"github.com/pkg/errors"
 )
 
@@ -104,8 +105,8 @@ func (s *sess) Refresh(c echo.Context) error {
 		"session": echo.Map{
 			"access_token":       access,
 			"refresh_token":      refresh,
-			"access_expiration":  s.sessions.AccessTokenExprireAt(session).UTC(),
-			"refresh_expiration": session.ExpireAt.UTC(),
+			"access_expiration":  libsf.UnixMillisecond(s.sessions.AccessTokenExprireAt(session).UTC()),
+			"refresh_expiration": libsf.UnixMillisecond(session.ExpireAt.UTC()),
 		},
 	})
 }
