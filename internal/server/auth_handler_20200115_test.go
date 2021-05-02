@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/appleboy/gofight"
+	"github.com/appleboy/gofight/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/internal/sferror"
@@ -59,18 +59,13 @@ func TestRequestRegistration20200115(t *testing.T) {
 		assert.Regexp(t, `^v2.local.[A-Za-z0-9+_\-]+$`, string(v.Get("session", "access_token").GetStringBytes()))
 		assert.Regexp(t, `^v2.local.[A-Za-z0-9+_\-]+$`, string(v.Get("session", "refresh_token").GetStringBytes()))
 
-		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "access_expiration").GetStringBytes()))
-		assert.NoError(t, err)
-		assert.InEpsilon(t, time.Now().Add(ctrl.AccessTokenExpirationTime).UnixNano(), timestamp.UnixNano(), 500)
-
-		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "refresh_expiration").GetStringBytes()))
-		assert.NoError(t, err)
-		assert.InEpsilon(t, time.Now().Add(ctrl.RefreshTokenExpirationTime).UnixNano(), timestamp.UnixNano(), 500)
+		assert.InEpsilon(t, time.Now().Add(ctrl.AccessTokenExpirationTime).UnixNano()/int64(time.Millisecond), v.GetInt64("session", "access_expiration"), 500)
+		assert.InEpsilon(t, time.Now().Add(ctrl.RefreshTokenExpirationTime).UnixNano()/int64(time.Millisecond), v.GetInt64("session", "refresh_expiration"), 500)
 
 		//
 		//
 
-		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("user", "created_at").GetStringBytes()))
+		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("user", "created_at").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.Less(t, time.Since(timestamp).Nanoseconds(), (500 * time.Millisecond).Nanoseconds())
 
@@ -166,18 +161,13 @@ func TestRequestLogin20200115(t *testing.T) {
 		assert.Regexp(t, `^v2.local.[A-Za-z0-9+_\-]+$`, string(v.Get("session", "access_token").GetStringBytes()))
 		assert.Regexp(t, `^v2.local.[A-Za-z0-9+_\-]+$`, string(v.Get("session", "refresh_token").GetStringBytes()))
 
-		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "access_expiration").GetStringBytes()))
-		assert.NoError(t, err)
-		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano(), timestamp.UnixNano(), 1000)
-
-		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "refresh_expiration").GetStringBytes()))
-		assert.NoError(t, err)
-		assert.InEpsilon(t, session.ExpireAt.UnixNano(), timestamp.UnixNano(), 1000)
+		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano()/int64(time.Millisecond), v.GetInt64("session", "access_expiration"), 1000)
+		assert.InEpsilon(t, session.ExpireAt.UnixNano()/int64(time.Millisecond), v.GetInt64("session", "refresh_expiration"), 1000)
 
 		//
 		//
 
-		timestamp, err = time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
+		timestamp, err := time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.Equal(t, user.CreatedAt.UTC(), timestamp.UTC())
 
@@ -262,18 +252,13 @@ func TestRequestUpdate20200115(t *testing.T) {
 		assert.Equal(t, session.ID, sid)
 		assert.Equal(t, session.RefreshToken, token)
 
-		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "access_expiration").GetStringBytes()))
-		assert.NoError(t, err)
-		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano(), timestamp.UnixNano(), 1000)
-
-		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "refresh_expiration").GetStringBytes()))
-		assert.NoError(t, err)
-		assert.InEpsilon(t, session.ExpireAt.UnixNano(), timestamp.UnixNano(), 1000)
+		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano()/int64(time.Millisecond), v.GetInt64("session", "access_expiration"), 1000)
+		assert.InEpsilon(t, session.ExpireAt.UnixNano()/int64(time.Millisecond), v.GetInt64("session", "refresh_expiration"), 1000)
 
 		//
 		//
 
-		timestamp, err = time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
+		timestamp, err := time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.Equal(t, user.CreatedAt.UTC(), timestamp.UTC())
 
@@ -370,18 +355,13 @@ func TestRequestUpdatePassword20200115(t *testing.T) {
 		assert.Equal(t, session.ID, sid)
 		assert.Equal(t, session.RefreshToken, token)
 
-		timestamp, err := time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "access_expiration").GetStringBytes()))
-		assert.NoError(t, err)
-		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano(), timestamp.UnixNano(), 1000)
-
-		timestamp, err = time.Parse("2006-01-02T15:04:05.999Z", string(v.Get("session", "refresh_expiration").GetStringBytes()))
-		assert.NoError(t, err)
-		assert.InEpsilon(t, session.ExpireAt.UnixNano(), timestamp.UnixNano(), 1000)
+		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano()/int64(time.Millisecond), v.GetInt64("session", "access_expiration"), 1000)
+		assert.InEpsilon(t, session.ExpireAt.UnixNano()/int64(time.Millisecond), v.GetInt64("session", "refresh_expiration"), 1000)
 
 		//
 		//
 
-		timestamp, err = time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
+		timestamp, err := time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
 		assert.NoError(t, err)
 		assert.Equal(t, user.CreatedAt.UTC(), timestamp.UTC())
 

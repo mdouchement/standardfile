@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/appleboy/gofight"
+	"github.com/appleboy/gofight/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/server"
 	"github.com/stretchr/testify/assert"

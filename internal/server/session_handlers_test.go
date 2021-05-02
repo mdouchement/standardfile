@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/appleboy/gofight"
+	"github.com/appleboy/gofight/v2"
 	"github.com/gofrs/uuid"
 	"github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/pkg/libsf"

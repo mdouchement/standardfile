@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/appleboy/gofight v2.0.0+incompatible
+	github.com/appleboy/gofight/v2 v2.1.2 // indirect
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/asdine/storm/v3 v3.2.1
 	github.com/bep/debounce v1.2.0
@@ -55,4 +56,5 @@ require (
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
