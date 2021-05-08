@@ -11,7 +11,7 @@ import (
 
 // Ignore differences that are at most this many seconds apart
 // Anything over this threshold will be conflicted.
-const minConflictInterval20190520 = 1.0 // in second
+const minConflictIntervalMicrosecond20190520 = 1_000
 
 type (
 	// A syncService20190520 is a service used for syncing items.
@@ -121,18 +121,14 @@ func (s *syncService20190520) save() (saved []*model.Item, conflicts []*Conflict
 		}
 
 		if !newRecord {
-			// We want to check if this updated_at value is equal to the item's current updated_at value.
-			// If they differ, it means the client is attempting to save an item which hasn't been updated.
-			// In this case, if the incoming_item.updated_at < server_item.updated_at, always conflict.
-			// We don't want old items overriding newer ones.
-			// incoming_item.updated_at > server_item.updated_at would seem to be impossible, as only servers are responsible for setting updated_at.
-			// But assuming a rogue client has gotten away with it,
-			// we should also conflict in this case if the difference between the dates is greater than MIN_CONFLICT_INTERVAL seconds.
+			// We want to check if the incoming updated_at value is equal to the item's current updated_at value.
+			// If they differ, it means the client is attempting to save an item which doesn't have the correct server value.
+			// We conflict if the difference in dates is greater than the 1 unit of precision (MIN_CONFLICT_INTERVAL_MICROSECONDS)
 
 			// By default incoming should equal to server item (which is desired, healthy behavior)
 			saveIncoming := true
 			// SFJS did not send updated_at prior to 0.3.59 but applied by the database layer so the value is OK.
-			difference := incomingItem.UpdatedAt.Sub(*serverItem.UpdatedAt).Seconds()
+			difference := incomingItem.UpdatedAt.Sub(*serverItem.UpdatedAt).Microseconds()
 
 			switch {
 			case difference < 0:
@@ -140,7 +136,7 @@ func (s *syncService20190520) save() (saved []*model.Item, conflicts []*Conflict
 				fallthrough
 			case difference > 0:
 				// incoming is greater than server item. Should never be the case. If so though, don't save.
-				saveIncoming = math.Abs(difference) < minConflictInterval20190520
+				saveIncoming = math.Abs(float64(difference)) < minConflictIntervalMicrosecond20190520
 			}
 
 			if !saveIncoming {

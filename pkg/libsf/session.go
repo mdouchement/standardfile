@@ -2,8 +2,6 @@ package libsf
 
 import (
 	"encoding/json"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -36,41 +34,38 @@ func (s Session) RefreshExpired() bool {
 	return !s.Defined() || time.Now().After(s.RefreshExpiration)
 }
 
-type sessionTime time.Time
-
-func (t *sessionTime) UnmarshalJSON(s []byte) error {
-	r := strings.ReplaceAll(string(s), `"`, ``)
-	tt, err := time.Parse(time.RFC3339, r)
-
-	if err != nil {
-		q, err := strconv.ParseInt(string(s), 10, 64)
-		if err != nil {
-			return err
-		}
-		*(*time.Time)(t) = time.Unix(0, q*1000000)
-		return nil
-	}
-	*(*time.Time)(t) = tt
-	return nil
-}
-
-func (s *Session) UnmarshalJSON(raw []byte) error {
-	st := &struct {
-		AccessToken       string      `json:"access_token"`
-		RefreshToken      string      `json:"refresh_token"`
-		AccessExpiration  sessionTime `json:"access_expiration"`
-		RefreshExpiration sessionTime `json:"refresh_expiration"`
+func (s *Session) UnmarshalJSON(data []byte) error {
+	session := struct {
+		AccessToken       string `json:"access_token"`
+		RefreshToken      string `json:"refresh_token"`
+		AccessExpiration  int64  `json:"access_expiration"`
+		RefreshExpiration int64  `json:"refresh_expiration"`
 	}{}
 
-	err := json.Unmarshal(raw, st)
+	err := json.Unmarshal(data, &session)
 	if err != nil {
 		return err
 	}
 
-	s.AccessToken = st.AccessToken
-	s.RefreshToken = st.RefreshToken
-	s.AccessExpiration = time.Time(st.AccessExpiration)
-	s.RefreshExpiration = time.Time(st.RefreshExpiration)
-
+	s.AccessToken = session.AccessToken
+	s.RefreshToken = session.RefreshToken
+	s.AccessExpiration = FromUnixMillisecond(session.AccessExpiration)
+	s.RefreshExpiration = FromUnixMillisecond(session.RefreshExpiration)
 	return nil
+}
+
+func (s Session) MarshalJSON() ([]byte, error) {
+	session := struct {
+		AccessToken       string `json:"access_token"`
+		RefreshToken      string `json:"refresh_token"`
+		AccessExpiration  int64  `json:"access_expiration"`
+		RefreshExpiration int64  `json:"refresh_expiration"`
+	}{
+		AccessToken:       s.AccessToken,
+		RefreshToken:      s.RefreshToken,
+		AccessExpiration:  UnixMillisecond(s.AccessExpiration),
+		RefreshExpiration: UnixMillisecond(s.RefreshExpiration),
+	}
+
+	return json.Marshal(session)
 }
