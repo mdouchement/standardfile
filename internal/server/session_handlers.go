@@ -114,9 +114,14 @@ func (s *sess) Refresh(c echo.Context) error {
 // Delete terminates the specified session by UUID.
 func (s *sess) Delete(c echo.Context) error {
 	// Filter params
-	var params deleteSessionParams
-	if err := c.Bind(&params); err != nil {
-		return c.JSON(http.StatusBadRequest, sferror.New("Could not get session UUID."))
+	params := deleteSessionParams{
+		ID: c.Param("id"), // Handle /v1/sessions/:id
+	}
+	if params.ID == "" {
+		// Handle /session
+		if err := c.Bind(&params); err != nil {
+			return c.JSON(http.StatusBadRequest, sferror.New("Could not get session UUID."))
+		}
 	}
 
 	if params.ID == "" {
