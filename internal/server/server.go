@@ -63,6 +63,9 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	restricted := router.Group("")
 	restricted.Use(middlewares.Session(sessions))
 
+	v1 := router.Group("/v1")
+	v1restricted := restricted.Group("/v1")
+
 	// generic handlers
 	//
 	router.GET("/version", func(c echo.Context) error {
@@ -80,12 +83,24 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	}
 	if !ctrl.NoRegistration {
 		router.POST("/auth", auth.Register)
+
+		v1.POST("/users", auth.Register)
 	}
 	router.GET("/auth/params", auth.Params) // Used for sign_in
 	router.POST("/auth/sign_in", auth.Login)
 	restricted.POST("/auth/sign_out", auth.Logout)
 	restricted.POST("/auth/update", auth.Update)
 	restricted.POST("/auth/change_pw", auth.UpdatePassword)
+
+	v1.GET("/login-params", auth.Params)
+	v1.POST("/login", auth.Login)
+	v1restricted.POST("/logout", auth.Logout)
+
+	// TODO: GET    /auth/methods
+	// TODO: GET    /v1/users/:id/params => currentuser auth.Params
+	// TODO: PATCH  /v1/users/:id
+	// TODO: PUT    /v1/users/:id/settings
+	// TODO: DELETE /v1/users/:id/settings/:param
 
 	//
 	// session handlers
@@ -99,6 +114,11 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	restricted.DELETE("/session", session.Delete)
 	restricted.DELETE("/session/all", session.DeleteAll)
 
+	v1restricted.POST("/sessions/refresh", session.Refresh)
+	v1restricted.GET("/sessions", session.List)
+	v1restricted.DELETE("/sessions/:id", session.Delete)
+	v1restricted.DELETE("/sessions", session.DeleteAll)
+
 	//
 	// item handlers
 	//
@@ -109,15 +129,19 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	restricted.POST("/items/backup", item.Backup)
 	restricted.DELETE("/items", item.Delete)
 
+	v1restricted.POST("/items", item.Sync)
+
 	return engine
 }
 
 // PrintRoutes prints the Echo engin exposed routes.
 func PrintRoutes(e *echo.Echo) {
 	ignored := map[string]bool{
-		"":   true,
-		".":  true,
-		"/*": true,
+		"":      true,
+		".":     true,
+		"/*":    true,
+		"/v1":   true,
+		"/v1/*": true,
 	}
 
 	routes := e.Routes()
