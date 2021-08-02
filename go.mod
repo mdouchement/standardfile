@@ -11,16 +11,15 @@ require (
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
 	github.com/d1str0/pkcs7 v0.0.0-20200424205038-d65c16a5759a
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gcla/gowid v1.2.0
 	github.com/gdamore/tcell v1.4.0
 	github.com/gofrs/uuid v4.0.0+incompatible
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/knadh/koanf v0.16.0
-	github.com/labstack/echo/v4 v4.2.2
+	github.com/labstack/echo/v4 v4.5.0
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
-	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-runewidth v0.0.12 // indirect
 	github.com/mdouchement/middlewarex v0.3.0
 	github.com/mdouchement/simple-argon2 v0.1.2
