@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/database"
+	"github.com/mdouchement/standardfile/internal/server/serializer"
 	"github.com/mdouchement/standardfile/internal/server/service"
 	"github.com/mdouchement/standardfile/internal/sferror"
 )
@@ -34,7 +35,7 @@ func (h *item) Sync(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, sync)
+	return c.JSON(http.StatusOK, serializer.Global(sync))
 }
 
 ///// Backup

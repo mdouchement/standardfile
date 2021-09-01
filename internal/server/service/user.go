@@ -1,7 +1,9 @@
 package service
 
 import (
+	"crypto/sha256"
 	"net/http"
+	"os"
 	"time"
 
 	argon2 "github.com/mdouchement/simple-argon2"
@@ -9,6 +11,7 @@ import (
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/internal/sferror"
+	"github.com/mdouchement/standardfile/pkg/libsf"
 	"github.com/pkg/errors"
 )
 
@@ -19,6 +22,7 @@ type (
 	// A UserService is a service used for handle API versioning of the user.
 	UserService interface {
 		Register(params RegisterParams) (Render, error)
+		AuthParams(params AuthParams) (Render, error)
 		Login(params LoginParams) (Render, error)
 		Update(user *model.User, params UpdateUserParams) (Render, error)
 		Password(user *model.User, params UpdatePasswordParams) (Render, error)
@@ -35,6 +39,12 @@ type (
 		Created              string `json:"created"`     // Since 20200115
 		Identifier           string `json:"identifier"`  // Since 20200115
 		Origination          string `json:"origination"` // Since 20200115
+	}
+
+	// AuthParams are used to get user auth params.
+	AuthParams struct {
+		Params
+		Email string `json:"email"`
 	}
 
 	// LoginParams are used to login a user.
@@ -131,6 +141,38 @@ func (s *userServiceBase) register(params RegisterParams, success success, respo
 		return nil, errors.Wrap(err, "could not persist user")
 	}
 
+	return success(user, params.Params, response)
+}
+
+func (s *userServiceBase) authparams(params AuthParams, success success, response M) (Render, error) {
+	// Check if the user exists.
+	user, err := s.db.FindUserByMail(params.Email)
+	if err != nil {
+		hostname, _ := os.Hostname()
+		return M{
+			"identifier": params.Email,
+			"nonce":      sha256.Sum256([]byte(params.Email + hostname)),
+			"version":    libsf.ProtocolVersion4,
+		}, nil
+	}
+
+	if response == nil {
+		response = M{}
+	}
+
+	response["identifier"] = user.Email
+	response["version"] = user.Version
+
+	switch user.Version {
+	case libsf.ProtocolVersion2:
+		response["pw_cost"] = user.PasswordCost
+		response["pw_salt"] = user.PasswordSalt
+	case libsf.ProtocolVersion3:
+		response["pw_cost"] = user.PasswordCost
+		response["pw_nonce"] = user.PasswordNonce
+	case libsf.ProtocolVersion4:
+		response["pw_nonce"] = user.PasswordNonce
+	}
 	return success(user, params.Params, response)
 }
 

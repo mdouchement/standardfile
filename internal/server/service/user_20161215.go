@@ -17,6 +17,10 @@ func (s *userService20161215) Register(params RegisterParams) (Render, error) {
 	return s.register(params, s.SuccessfulAuthentication, nil)
 }
 
+func (s *userService20161215) AuthParams(params AuthParams) (Render, error) {
+	return s.authparams(params, s.Successful, nil)
+}
+
 func (s *userService20161215) Login(params LoginParams) (Render, error) {
 	return s.login(params, s.SuccessfulAuthentication, nil)
 }
@@ -27,6 +31,10 @@ func (s *userService20161215) Update(user *model.User, params UpdateUserParams) 
 
 func (s *userService20161215) Password(user *model.User, params UpdatePasswordParams) (Render, error) {
 	return s.password(user, params, s.SuccessfulAuthentication, nil)
+}
+
+func (s *userService20161215) Successful(u *model.User, params Params, response M) (Render, error) {
+	return response, nil
 }
 
 func (s *userService20161215) SuccessfulAuthentication(u *model.User, _ Params, response M) (Render, error) {

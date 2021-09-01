@@ -1,10 +1,8 @@
 package server
 
 import (
-	"crypto/sha256"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/database"
@@ -64,44 +62,26 @@ func (h *auth) Register(c echo.Context) error {
 // Params used for password generation.
 // https://standardfile.org/#get-auth-params
 func (h *auth) Params(c echo.Context) error {
+	var params service.AuthParams
+
 	// Fetch params from URL queries
-	email := c.QueryParam("email")
-	if email == "" {
+	params.Email = c.QueryParam("email")
+	if params.Email == "" {
 		return c.JSON(http.StatusUnauthorized, sferror.New("No email provided."))
 	}
-
-	// Check if the user exists.
-	user, err := h.db.FindUserByMail(email)
-	if err != nil {
-		hostname, _ := os.Hostname()
-		return c.JSON(http.StatusOK, echo.Map{
-			"identifier": email,
-			"nonce":      sha256.Sum256([]byte(email + hostname)),
-			"version":    libsf.ProtocolVersion4,
-		})
-	}
+	params.APIVersion = c.QueryParam("api")
+	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
 
 	// TODO 2FA
 	// https://github.com/standardfile/ruby-server/blob/master/app/controllers/api/auth_controller.rb#L16
 
-	// Render
-	params := echo.Map{
-		"identifier": user.Email,
-		"version":    user.Version,
+	service := service.NewUser(h.db, h.sessions, params.APIVersion)
+	auth, err := service.AuthParams(params)
+	if err != nil {
+		return err
 	}
-
-	switch user.Version {
-	case libsf.ProtocolVersion2:
-		params["pw_cost"] = user.PasswordCost
-		params["pw_salt"] = user.PasswordSalt
-	case libsf.ProtocolVersion3:
-		params["pw_cost"] = user.PasswordCost
-		params["pw_nonce"] = user.PasswordNonce
-	case libsf.ProtocolVersion4:
-		params["pw_nonce"] = user.PasswordNonce
-	}
-
-	return c.JSON(http.StatusOK, params)
+	return c.JSON(http.StatusOK, auth)
 }
 
 ///// Login

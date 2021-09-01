@@ -21,8 +21,14 @@ func (s *userService20200115) Register(params RegisterParams) (Render, error) {
 	return s.register(params, s.SuccessfulAuthentication, nil)
 }
 
+func (s *userService20200115) AuthParams(params AuthParams) (Render, error) {
+	return s.authparams(params, s.Successful, nil)
+}
+
 func (s *userService20200115) Login(params LoginParams) (Render, error) {
-	return s.login(params, s.SuccessfulAuthentication, nil)
+	return s.login(params, s.SuccessfulAuthentication, M{
+		"_add_key_params": true,
+	})
 }
 
 func (s *userService20200115) Update(user *model.User, params UpdateUserParams) (Render, error) {
@@ -36,8 +42,12 @@ func (s *userService20200115) Password(user *model.User, params UpdatePasswordPa
 	// `upgrading_protocol_version && new_protocol_version == @user_class::SESSIONS_PROTOCOL_VERSION`
 
 	return s.password(user, params, s.SuccessfulAuthentication, M{
-		"key_params": s.KeyParams(user),
+		"_add_key_params": true,
 	})
+}
+
+func (s *userService20200115) Successful(u *model.User, params Params, response M) (Render, error) {
+	return serializer.Global(response), nil
 }
 
 func (s *userService20200115) SuccessfulAuthentication(u *model.User, params Params, response M) (Render, error) {
@@ -74,7 +84,12 @@ func (s *userService20200115) SuccessfulAuthentication(u *model.User, params Par
 		"access_expiration":  libsf.UnixMillisecond(s.sessions.AccessTokenExprireAt(session).UTC()),
 		"refresh_expiration": libsf.UnixMillisecond(session.ExpireAt.UTC()),
 	}
-	return response, nil
+	if _, ok := response["_add_key_params"]; ok {
+		delete(response, "_add_key_params")
+		response["key_params"] = s.KeyParams(u)
+	}
+
+	return serializer.Global(response), nil
 }
 
 func (s *userService20200115) CreateSession(u *model.User, params Params) (*model.Session, error) {
