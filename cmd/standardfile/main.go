@@ -9,7 +9,6 @@ import (
 	"runtime"
 
 	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/mdouchement/standardfile/internal/database"
@@ -85,7 +84,7 @@ var (
 		Args:  cobra.ExactArgs(0),
 		RunE: func(_ *cobra.Command, _ []string) error {
 			konf := koanf.New(".")
-			if err := konf.Load(file.Provider(cfg), toml.Parser()); err != nil {
+			if err := konf.Load(file.Provider(cfg), yaml.Parser()); err != nil {
 				return err
 			}
 
@@ -100,7 +99,7 @@ var (
 		Args:  cobra.ExactArgs(0),
 		RunE: func(_ *cobra.Command, _ []string) error {
 			konf := koanf.New(".")
-			if err := konf.Load(file.Provider(cfg), toml.Parser()); err != nil {
+			if err := konf.Load(file.Provider(cfg), yaml.Parser()); err != nil {
 				return err
 			}
 
