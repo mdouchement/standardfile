@@ -4,7 +4,7 @@ address: "localhost:5000"
 no_registration: false
 # Database folder path; empty value means current directory
 database_path: ""
-# Secret key used for JWT authenthentication (before 004 and 20200115)
+# Secret key used for JWT authentication (before 004 and 20200115)
 secret_key: jwt-development
 # Session used for authentication (since 004 and 20200115)
 session:
