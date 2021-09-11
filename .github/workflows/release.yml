@@ -1,0 +1,41 @@
+on:
+  # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#release
+  release:
+    types: [created]
+name: Build Release
+env:
+  GO_VERSION: "^1.17.1"
+  TASK_VERSION: v3.7.3
+  TASK_SUM: 23e670ab136e25dad74b3c7d97900f7c2879c6874ccaae29e6fc041061be5fb4
+jobs:
+  release:
+    name: Build binaries
+    runs-on: ubuntu-latest
+    steps:
+    #
+    - name: Install Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ env.GO_VERSION }}
+      id: go
+    #
+    - name: Tooling(checksum)
+      run: go install github.com/mdouchement/checksum@master
+    - name: Tooling(Taskfile)
+      run: |
+        curl -LO https://github.com/go-task/task/releases/download/${{ env.TASK_VERSION }}/task_linux_amd64.tar.gz && \
+        echo "${{ env.TASK_SUM }}  task_linux_amd64.tar.gz" | sha256sum -c && \
+        tar -xf task_linux_amd64.tar.gz && \
+        cp task /usr/local/bin/
+    #
+    - name: Checkout code
+      uses: actions/checkout@v2
+    #
+    - name: Build binaries
+      run: task build-all
+    #
+    - name: Update release
+      run: go run .github/workflows/release.go
+      env:
+        # secrets.GITHUB_TOKEN is created by GH action and is limited to the repository
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

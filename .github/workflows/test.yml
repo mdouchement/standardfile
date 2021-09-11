@@ -1,5 +1,9 @@
+on:
+- push
+- pull_request
 name: Test
-on: [push, pull_request]
+env:
+  GO_VERSION: "^1.17.1"
 jobs:
   test:
     name: Test
@@ -8,10 +12,10 @@ jobs:
     - name: Install Go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.16
+        go-version: ${{ env.GO_VERSION }}
       id: go
     - name: Tooling
-      run: go get gotest.tools/gotestsum
+      run: go install gotest.tools/gotestsum@latest
     - name: Checkout code
       uses: actions/checkout@v2
     - name: Test
