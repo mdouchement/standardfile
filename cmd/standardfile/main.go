@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -148,10 +149,16 @@ var (
 
 			address := konf.String("address")
 			message := "could not run server"
-			log.Printf("Server listening on %s", address)
-			split := strings.Split(address, ":")
-			if len(split) == 2 && split[0] == "unix" {
-				listener, err := net.Listen(split[0], split[1])
+			log.Printf("Server listening on %s\n", address)
+			parts := strings.Split(address, ":")
+			if len(parts) == 2 && parts[0] == "unix" {
+				socketFile := parts[1]
+				if _, err := os.Stat(socketFile); os.IsExist(err) {
+					log.Printf("Removing existing %s\n", socketFile)
+					os.Remove(socketFile)
+				}
+				defer os.Remove(socketFile)
+				listener, err := net.Listen(parts[0], socketFile)
 				if err != nil {
 					return err
 				}
