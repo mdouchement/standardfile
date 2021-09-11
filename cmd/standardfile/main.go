@@ -5,8 +5,11 @@ import (
 	"hash"
 	"io"
 	"log"
+	"net"
+	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
@@ -144,11 +147,24 @@ var (
 			})
 			server.PrintRoutes(engine)
 
-			log.Printf("Server listening on %s", konf.String("address"))
-			return errors.Wrap(
-				engine.Start(konf.String("address")),
-				"could not run server",
-			)
+			address := konf.String("address")
+			message := "could not run server"
+			log.Printf("Server listening on %s\n", address)
+			parts := strings.Split(address, ":")
+			if len(parts) == 2 && parts[0] == "unix" {
+				socketFile := parts[1]
+				if _, err := os.Stat(socketFile); os.IsExist(err) {
+					log.Printf("Removing existing %s\n", socketFile)
+					os.Remove(socketFile)
+				}
+				defer os.Remove(socketFile)
+				listener, err := net.Listen(parts[0], socketFile)
+				if err != nil {
+					return err
+				}
+				return errors.Wrap(engine.Server.Serve(listener), message)
+			}
+			return errors.Wrap(engine.Start(address), message)
 		},
 	}
 )
