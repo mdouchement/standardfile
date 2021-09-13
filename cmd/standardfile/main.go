@@ -153,7 +153,7 @@ var (
 			parts := strings.Split(address, ":")
 			if len(parts) == 2 && parts[0] == "unix" {
 				socketFile := parts[1]
-				if _, err := os.Stat(socketFile); os.IsExist(err) {
+				if _, err := os.Stat(socketFile); err == nil {
 					log.Printf("Removing existing %s\n", socketFile)
 					os.Remove(socketFile)
 				}
