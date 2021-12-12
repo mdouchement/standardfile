@@ -3,7 +3,7 @@ on:
 - pull_request
 name: Test
 env:
-  GO_VERSION: "^1.17.1"
+  GO_VERSION: "1.17.5" # Specific version to avoid old cached version
 jobs:
   test:
     name: Test

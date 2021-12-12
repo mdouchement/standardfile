@@ -4,7 +4,7 @@ on:
     types: [created]
 name: Build Release
 env:
-  GO_VERSION: "^1.17.1"
+  GO_VERSION: "1.17.5" # Specific version to avoid old cached version
   TASK_VERSION: v3.7.3
   TASK_SUM: 23e670ab136e25dad74b3c7d97900f7c2879c6874ccaae29e6fc041061be5fb4
 jobs:
