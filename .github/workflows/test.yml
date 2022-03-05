@@ -3,12 +3,17 @@ on:
 - pull_request
 name: Test
 env:
-  GO_VERSION: "1.17.5" # Specific version to avoid old cached version
+  GO_VERSION: "~1"
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
+    #
+    # Workaround until https://github.com/actions/setup-go/pull/184 merged
+    - name: Remove Golang from cache
+      run: rm -rf ${RUNNER_TOOL_CACHE}/go
+    #
     - name: Install Go
       uses: actions/setup-go@v2
       with:
