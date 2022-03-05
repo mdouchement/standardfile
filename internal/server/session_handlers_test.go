@@ -9,6 +9,7 @@ import (
 
 	"github.com/appleboy/gofight/v2"
 	"github.com/gofrs/uuid"
+	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/pkg/libsf"
 	"github.com/stretchr/testify/assert"
@@ -87,34 +88,42 @@ func TestRequestSessionRegenerate(t *testing.T) {
 	defer cleanup()
 
 	sessions := session.NewManager(ctrl.Database, ctrl.SigningKey, ctrl.SessionSecret, ctrl.AccessTokenExpirationTime, ctrl.RefreshTokenExpirationTime)
-	_, session := createUserWithSession(ctrl)
+	_, ses := createUserWithSession(ctrl)
 
 	//
 
 	r.POST("/session/refresh").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
-		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
+		assert.Equal(t, http.StatusBadRequest, r.Code)
+		assert.JSONEq(t, `{"error":{"message":"Invalid request body.", "tag":"invalid-parameters"}}`, r.Body.String())
 	})
-
-	header := gofight.H{
-		"Authorization": "Bearer " + accessToken(ctrl, session),
-	}
 
 	params := gofight.D{}
 
-	r.POST("/session/refresh").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+	r.POST("/session/refresh").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusBadRequest, r.Code)
-		assert.JSONEq(t, `{"error":{"message":"Please provide all required parameters."}}`, r.Body.String())
+		assert.JSONEq(t, `{"error":{"message":"Please provide all required parameters.", "tag":"invalid-parameters"}}`, r.Body.String())
 	})
 
-	params["access_token"] = accessToken(ctrl, session)
-	r.POST("/session/refresh").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+	params["access_token"] = "fake-token"
+	r.POST("/session/refresh").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusBadRequest, r.Code)
-		assert.JSONEq(t, `{"error":{"message":"Please provide all required parameters."}}`, r.Body.String())
+		assert.JSONEq(t, `{"error":{"message":"Please provide all required parameters.", "tag":"invalid-parameters"}}`, r.Body.String())
 	})
 
-	params["refresh_token"] = refreshToken(ctrl, session)
-	r.POST("/session/refresh").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+	params["refresh_token"] = "fake-token"
+	r.POST("/session/refresh").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusBadRequest, r.Code)
+		assert.JSONEq(t, `{"error":{"message":"The provided parameters are not valid.", "tag":"invalid-parameters"}}`, r.Body.String())
+	})
+
+	params["access_token"] = accessToken(ctrl, ses)
+	r.POST("/session/refresh").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusBadRequest, r.Code)
+		assert.JSONEq(t, `{"error":{"message":"The provided parameters are not valid.", "tag":"invalid-parameters"}}`, r.Body.String())
+	})
+
+	params["refresh_token"] = refreshToken(ctrl, ses)
+	r.POST("/session/refresh").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusOK, r.Code)
 
 		var refresh SessionRefresh
@@ -124,14 +133,33 @@ func TestRequestSessionRegenerate(t *testing.T) {
 		fmt.Println(r.Body.String())
 
 		assert.NotEmpty(t, refresh.Session.AccessToken)
-		assert.NotEqual(t, session.AccessToken, refresh.Session.AccessToken)
+		assert.NotEqual(t, ses.AccessToken, refresh.Session.AccessToken)
 		assert.NotEmpty(t, refresh.Session.RefreshToken)
-		assert.NotEqual(t, session.RefreshToken, refresh.Session.RefreshToken)
+		assert.NotEqual(t, ses.RefreshToken, refresh.Session.RefreshToken)
 
-		assert.Greater(t, refresh.Session.RefreshExpiration, libsf.UnixMillisecond(session.ExpireAt))
-		assert.InEpsilon(t, session.CreatedAt.UnixNano(), session.ExpireAt.Add(-ctrl.RefreshTokenExpirationTime).UnixNano(), 1000)
-		assert.Greater(t, refresh.Session.AccessExpiration, libsf.UnixMillisecond(sessions.AccessTokenExprireAt(session)))
-		assert.InEpsilon(t, session.CreatedAt.UnixNano(), sessions.AccessTokenExprireAt(session).Add(-ctrl.AccessTokenExpirationTime).UnixNano(), 1000)
+		assert.Greater(t, refresh.Session.RefreshExpiration, libsf.UnixMillisecond(ses.ExpireAt))
+		assert.InEpsilon(t, ses.CreatedAt.UnixNano(), ses.ExpireAt.Add(-ctrl.RefreshTokenExpirationTime).UnixNano(), 1000)
+		assert.Greater(t, refresh.Session.AccessExpiration, libsf.UnixMillisecond(sessions.AccessTokenExprireAt(ses)))
+		assert.InEpsilon(t, ses.CreatedAt.UnixNano(), sessions.AccessTokenExprireAt(ses).Add(-ctrl.AccessTokenExpirationTime).UnixNano(), 1000)
+	})
+
+	//
+	//
+
+	ses = &model.Session{
+		APIVersion:   "20200115",
+		UserAgent:    "Go-http-client/1.1",
+		UserID:       "fake_id",
+		ExpireAt:     time.Now().Add(ctrl.RefreshTokenExpirationTime).UTC(),
+		AccessToken:  session.SecureToken(8),
+		RefreshToken: session.SecureToken(8),
+	}
+
+	params["access_token"] = accessToken(ctrl, ses)
+	params["refresh_token"] = refreshToken(ctrl, ses)
+	r.POST("/session/refresh").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusBadRequest, r.Code)
+		assert.JSONEq(t, `{"error":{"message":"The provided parameters are not valid.", "tag":"invalid-parameters"}}`, r.Body.String())
 	})
 }
 

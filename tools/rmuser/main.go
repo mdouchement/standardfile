@@ -8,16 +8,16 @@ import (
 	"github.com/asdine/storm/v3/q"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/model"
+	"github.com/muesli/coral"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 func main() {
-	c := &cobra.Command{
+	c := &coral.Command{
 		Use:   "rmuser",
 		Short: "Remove a user from the database",
-		Args:  cobra.ExactArgs(2),
-		RunE: func(_ *cobra.Command, args []string) error {
+		Args:  coral.ExactArgs(2),
+		RunE: func(_ *coral.Command, args []string) error {
 			//
 			//
 			fmt.Println("Opening", args[0])
