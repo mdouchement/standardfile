@@ -88,7 +88,7 @@ func TestRequestSessionRegenerate(t *testing.T) {
 	defer cleanup()
 
 	sessions := session.NewManager(ctrl.Database, ctrl.SigningKey, ctrl.SessionSecret, ctrl.AccessTokenExpirationTime, ctrl.RefreshTokenExpirationTime)
-	_, ses := createUserWithSession(ctrl)
+	user, ses := createUserWithSession(ctrl)
 
 	//
 
@@ -144,6 +144,7 @@ func TestRequestSessionRegenerate(t *testing.T) {
 	})
 
 	//
+	// Valid tokens encryption but does not existing in database.
 	//
 
 	ses = &model.Session{
@@ -160,6 +161,28 @@ func TestRequestSessionRegenerate(t *testing.T) {
 	r.POST("/session/refresh").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusBadRequest, r.Code)
 		assert.JSONEq(t, `{"error":{"message":"The provided parameters are not valid.", "tag":"invalid-parameters"}}`, r.Body.String())
+	})
+
+	//
+	// Expired refresh token.
+	//
+
+	ses = &model.Session{
+		APIVersion:   "20200115",
+		UserAgent:    "Go-http-client/1.1",
+		UserID:       user.ID,
+		ExpireAt:     time.Now().UTC(),
+		AccessToken:  session.SecureToken(8),
+		RefreshToken: session.SecureToken(8),
+	}
+	err := ctrl.Database.Save(ses)
+	assert.NoError(t, err)
+
+	params["access_token"] = accessToken(ctrl, ses)
+	params["refresh_token"] = refreshToken(ctrl, ses)
+	r.POST("/session/refresh").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusBadRequest, r.Code)
+		assert.JSONEq(t, `{"error":{"message":"The refresh token has expired.", "tag":"expired-refresh-token"}}`, r.Body.String())
 	})
 }
 

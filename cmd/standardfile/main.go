@@ -16,8 +16,8 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/server"
-	"github.com/muesli/coral"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/hkdf"
 )
@@ -33,11 +33,11 @@ var (
 )
 
 func main() {
-	c := &coral.Command{
+	c := &cobra.Command{
 		Use:     "standardfile",
 		Short:   "Standard File server for StandardNotes",
 		Version: fmt.Sprintf("%s - build %.7s @ %s - %s", version, revision, date, runtime.Version()),
-		Args:    coral.ExactArgs(0),
+		Args:    cobra.ExactArgs(0),
 	}
 	initCmd.Flags().StringVarP(&cfg, "config", "c", "", "Configuration file")
 	c.AddCommand(initCmd)
@@ -81,11 +81,11 @@ func kdf(l int, k []byte) []byte {
 }
 
 var (
-	initCmd = &coral.Command{
+	initCmd = &cobra.Command{
 		Use:   "init",
 		Short: "Init the database",
-		Args:  coral.ExactArgs(0),
-		RunE: func(_ *coral.Command, _ []string) error {
+		Args:  cobra.ExactArgs(0),
+		RunE: func(_ *cobra.Command, _ []string) error {
 			konf := koanf.New(".")
 			if err := konf.Load(file.Provider(cfg), yaml.Parser()); err != nil {
 				return err
@@ -96,11 +96,11 @@ var (
 	}
 
 	//
-	reindexCmd = &coral.Command{
+	reindexCmd = &cobra.Command{
 		Use:   "reindex",
 		Short: "Reindex the database",
-		Args:  coral.ExactArgs(0),
-		RunE: func(_ *coral.Command, _ []string) error {
+		Args:  cobra.ExactArgs(0),
+		RunE: func(_ *cobra.Command, _ []string) error {
 			konf := koanf.New(".")
 			if err := konf.Load(file.Provider(cfg), yaml.Parser()); err != nil {
 				return err
@@ -112,11 +112,11 @@ var (
 
 	//
 	//
-	serverCmd = &coral.Command{
+	serverCmd = &cobra.Command{
 		Use:   "server",
 		Short: "Start server",
-		Args:  coral.ExactArgs(0),
-		RunE: func(_ *coral.Command, _ []string) error {
+		Args:  cobra.ExactArgs(0),
+		RunE: func(_ *cobra.Command, _ []string) error {
 			konf := koanf.New(".")
 			if err := konf.Load(file.Provider(cfg), yaml.Parser()); err != nil {
 				return err

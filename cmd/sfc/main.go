@@ -6,7 +6,7 @@ import (
 	"runtime"
 
 	"github.com/mdouchement/standardfile/internal/client"
-	"github.com/muesli/coral"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -16,11 +16,11 @@ var (
 )
 
 func main() {
-	c := &coral.Command{
+	c := &cobra.Command{
 		Use:     "sfc",
 		Short:   "Standard File client (aka StandardNotes)",
 		Version: fmt.Sprintf("%s - build %.7s @ %s - %s", version, revision, date, runtime.Version()),
-		Args:    coral.NoArgs,
+		Args:    cobra.NoArgs,
 	}
 	c.AddCommand(loginCmd)
 	c.AddCommand(logoutCmd)
@@ -35,47 +35,47 @@ func main() {
 }
 
 var (
-	loginCmd = &coral.Command{
+	loginCmd = &cobra.Command{
 		Use:   "login",
 		Short: "Login to the StandardFile server",
-		Args:  coral.NoArgs,
-		RunE: func(_ *coral.Command, args []string) error {
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, args []string) error {
 			return client.Login()
 		},
 	}
 
-	logoutCmd = &coral.Command{
+	logoutCmd = &cobra.Command{
 		Use:   "logout",
 		Short: "Logout from a StandardFile server session",
-		Args:  coral.NoArgs,
-		RunE: func(_ *coral.Command, args []string) error {
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, args []string) error {
 			return client.Logout()
 		},
 	}
 
-	backupCmd = &coral.Command{
+	backupCmd = &cobra.Command{
 		Use:   "backup",
 		Short: "Backup your notes",
-		Args:  coral.NoArgs,
-		RunE: func(_ *coral.Command, args []string) error {
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, args []string) error {
 			return client.Backup()
 		},
 	}
 
-	unsealCmd = &coral.Command{
+	unsealCmd = &cobra.Command{
 		Use:   "unseal FILENAME",
 		Short: "Decrypt your backuped notes",
-		Args:  coral.ExactArgs(1),
-		RunE: func(_ *coral.Command, args []string) error {
+		Args:  cobra.ExactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
 			return client.Unseal(args[0])
 		},
 	}
 
-	noteCmd = &coral.Command{
+	noteCmd = &cobra.Command{
 		Use:   "note",
 		Short: "Text-based StandardNotes application",
-		Args:  coral.NoArgs,
-		RunE: func(_ *coral.Command, args []string) error {
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, args []string) error {
 			return client.Note()
 		},
 	}

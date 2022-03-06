@@ -9,18 +9,18 @@ import (
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/pkg/stormsql"
-	"github.com/muesli/coral"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
 // go run tools/console/main.go standardfile.db " SELECT count(*) FROM items WHERE UserID = 'f2a98ab0-2c40-42b4-be08-da3b771be935' AND UpdatedAt > '2019-02-16 20:52:55';  "
 
 func main() {
-	c := &coral.Command{
+	c := &cobra.Command{
 		Use:   "console",
 		Short: "SQL console for standardfile database",
-		Args:  coral.ExactArgs(2),
-		RunE: func(_ *coral.Command, args []string) error {
+		Args:  cobra.ExactArgs(2),
+		RunE: func(_ *cobra.Command, args []string) error {
 			//
 			//
 			sc, err := stormsql.ParseSelect(args[1])
