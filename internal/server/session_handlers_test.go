@@ -11,9 +11,114 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server/session"
+	"github.com/mdouchement/standardfile/internal/sferror"
 	"github.com/mdouchement/standardfile/pkg/libsf"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestRequestSessionMiddleware(t *testing.T) {
+	engine, ctrl, r, cleanup := setup()
+	defer cleanup()
+
+	user, validsession := createUserWithSession(ctrl)
+
+	//
+	// No token.
+	//
+
+	r.GET("/sessions").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
+	})
+
+	//
+	// Valid token encryption but does not existing in database.
+	//
+
+	invalidsession := &model.Session{
+		APIVersion:   "20200115",
+		UserAgent:    "Go-http-client/1.1",
+		UserID:       "fake_id",
+		ExpireAt:     time.Now().Add(ctrl.RefreshTokenExpirationTime).UTC(),
+		AccessToken:  session.SecureToken(8),
+		RefreshToken: session.SecureToken(8),
+	}
+
+	header := gofight.H{
+		"Authorization": "Bearer " + accessToken(ctrl, invalidsession),
+	}
+
+	r.GET("/sessions").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code, r.Body.String())
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
+	})
+
+	//
+	// Expired access token.
+	//
+
+	original := ctrl.AccessTokenExpirationTime
+
+	invalidsession = &model.Session{
+		APIVersion:   "20200115",
+		UserAgent:    "Go-http-client/1.1",
+		UserID:       user.ID,
+		ExpireAt:     time.Now().AddDate(0, 0, 1).UTC(),
+		AccessToken:  session.SecureToken(8),
+		RefreshToken: session.SecureToken(8),
+	}
+	err := ctrl.Database.Save(invalidsession)
+	assert.NoError(t, err)
+
+	ctrl.AccessTokenExpirationTime = 0
+
+	header = gofight.H{
+		"Authorization": "Bearer " + accessToken(ctrl, invalidsession),
+	}
+
+	r.GET("/sessions").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, sferror.StatusExpiredAccessToken, r.Code, r.Body.String())
+		assert.JSONEq(t, `{"error":{"tag":"expired-access-token","message":"The provided access token has expired."}}`, r.Body.String())
+	})
+
+	ctrl.AccessTokenExpirationTime = original
+
+	//
+	// Expired refresh token.
+	//
+
+	invalidsession = &model.Session{
+		APIVersion:   "20200115",
+		UserAgent:    "Go-http-client/1.1",
+		UserID:       user.ID,
+		ExpireAt:     time.Now().UTC(),
+		AccessToken:  session.SecureToken(8),
+		RefreshToken: session.SecureToken(8),
+	}
+	err = ctrl.Database.Save(invalidsession)
+	assert.NoError(t, err)
+
+	header = gofight.H{
+		"Authorization": "Bearer " + accessToken(ctrl, invalidsession),
+	}
+
+	r.GET("/sessions").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"tag":"invalid-auth", "message":"Invalid login credentials."}}`, r.Body.String())
+	})
+
+	//
+	// Successful.
+	//
+
+	header = gofight.H{
+		"Authorization": "Bearer " + accessToken(ctrl, validsession),
+	}
+
+	r.GET("/sessions").SetHeader(header).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusOK, r.Code)
+	})
+}
 
 type SessionList struct {
 	ID         string    `json:"uuid"`
@@ -144,7 +249,7 @@ func TestRequestSessionRegenerate(t *testing.T) {
 	})
 
 	//
-	// Valid tokens encryption but does not existing in database.
+	// Valid token encryption but does not existing in database.
 	//
 
 	ses = &model.Session{
