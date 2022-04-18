@@ -53,11 +53,19 @@ func (s *sess) Refresh(c echo.Context) error {
 	// Filter params
 	var params refreshSessionParams
 	if err := c.Bind(&params); err != nil {
-		return c.JSON(http.StatusBadRequest, sferror.New("Could not get refresh session params."))
+		return c.JSON(http.StatusBadRequest, sferror.NewWithTagCode(
+			http.StatusBadRequest,
+			"invalid-parameters",
+			"Invalid request body.",
+		))
 	}
 
 	if params.AccessToken == "" || params.RefreshToken == "" {
-		return c.JSON(http.StatusBadRequest, sferror.New("Please provide all required parameters."))
+		return c.JSON(http.StatusBadRequest, sferror.NewWithTagCode(
+			http.StatusBadRequest,
+			"invalid-parameters",
+			"Please provide all required parameters.",
+		))
 	}
 
 	sida, access, erra := s.sessions.ParseToken(params.AccessToken)

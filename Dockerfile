@@ -5,8 +5,8 @@ MAINTAINER mdouchement
 RUN apk upgrade
 RUN apk add --update --no-cache git curl
 
-ARG TASK_VERSION=v3.7.3
-ARG TASK_SUM=23e670ab136e25dad74b3c7d97900f7c2879c6874ccaae29e6fc041061be5fb4
+ARG TASK_VERSION=v3.11.0
+ARG TASK_SUM=8284fa89367e0bbb8ba5dcb90baa6826b7669c4a317e5b9a46711f7380075e21
 
 RUN curl -LO https://github.com/go-task/task/releases/download/$TASK_VERSION/task_linux_amd64.tar.gz && \
     echo "$TASK_SUM  task_linux_amd64.tar.gz" | sha256sum -c && \

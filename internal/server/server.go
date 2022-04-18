@@ -109,12 +109,12 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 		db:       ctrl.Database,
 		sessions: sessions,
 	}
-	restricted.POST("/session/refresh", session.Refresh)
+	router.POST("/session/refresh", session.Refresh)
 	restricted.GET("/sessions", session.List)
 	restricted.DELETE("/session", session.Delete)
 	restricted.DELETE("/session/all", session.DeleteAll)
 
-	v1restricted.POST("/sessions/refresh", session.Refresh)
+	v1.POST("/sessions/refresh", session.Refresh)
 	v1restricted.GET("/sessions", session.List)
 	v1restricted.DELETE("/sessions/:id", session.Delete)
 	v1restricted.DELETE("/sessions", session.DeleteAll)

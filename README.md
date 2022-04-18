@@ -32,7 +32,7 @@ Terminal UI client:
 
 ## Requirements
 
-- Golang 1.11.x (Go Modules)
+- Golang 1.16.x (Go Modules)
 
 ### Technologies / Frameworks
 
