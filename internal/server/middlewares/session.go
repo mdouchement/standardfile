@@ -57,7 +57,9 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 
 			if strings.HasPrefix(token, "v2.local.") {
 				err = paseto(fake)(c) // Check PASETO validity according its claims.
-				if err != nil {
+				if err != nil && !strings.Contains(err.Error(), "token has expired: token validation error") {
+					// Token is not valid.
+					// We do not catch token expiration here and let the session manager performs its validation.
 					return c.JSON(http.StatusUnauthorized, echo.Map{
 						"error": echo.Map{
 							"tag":     "invalid-auth",
@@ -73,6 +75,7 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 				if err != nil {
 					return err
 				}
+
 				c.Set(CurrentSessionContextKey, session)
 
 				// Find and store current_user for handlers.

@@ -158,12 +158,15 @@ var (
 					os.Remove(socketFile)
 				}
 				defer os.Remove(socketFile)
+
 				listener, err := net.Listen(parts[0], socketFile)
 				if err != nil {
 					return err
 				}
+
 				return errors.Wrap(engine.Server.Serve(listener), message)
 			}
+
 			return errors.Wrap(engine.Start(address), message)
 		},
 	}
