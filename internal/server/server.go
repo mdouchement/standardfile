@@ -131,6 +131,11 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 
 	v1restricted.POST("/items", item.Sync)
 
+	v2 := router.Group("/v2")
+	v2.POST("/login", auth.LoginPKCE)
+	v2.POST("/login-params", auth.ParamsPKCE)
+	//v2restricted := restricted.Group("/v2")
+
 	return engine
 }
 
@@ -142,6 +147,8 @@ func PrintRoutes(e *echo.Echo) {
 		"/*":    true,
 		"/v1":   true,
 		"/v1/*": true,
+		"/v2":   true,
+		"/v2/*": true,
 	}
 
 	routes := e.Routes()

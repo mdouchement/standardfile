@@ -2,6 +2,8 @@ package server
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -70,6 +72,31 @@ func (h *auth) Params(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, sferror.New("No email provided."))
 	}
 
+	return h.params(c, email)
+}
+
+func (h *auth) ParamsPKCE(c echo.Context) error {
+	var params service.LoginParams
+	if err := c.Bind(&params); err != nil {
+		log.Println("Could not get parameters:", err)
+		return c.JSON(http.StatusBadRequest, sferror.New("Could not get credentials."))
+	}
+	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
+
+	if params.Email == "" || params.CodeChallenge == "" {
+		return c.JSON(http.StatusBadRequest, sferror.New("No email or code challenge provided."))
+	}
+
+	if err := h.db.StorePKCE(params.CodeChallenge); err != nil {
+		log.Println("Could not store code challenge:", err)
+		return c.JSON(http.StatusBadRequest, sferror.New("Could not get credentials."))
+	}
+
+	return h.params(c, params.Email)
+}
+
+func (h *auth) params(c echo.Context, email string) error {
 	// Check if the user exists.
 	user, err := h.db.FindUserByMail(email)
 	if err != nil {
@@ -124,6 +151,12 @@ func (h *auth) Login(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, sferror.New("No email or password provided."))
 	}
 
+	return h.login(c, params)
+
+}
+
+func (h *auth) login(c echo.Context, params service.LoginParams) error {
+
 	// TODO 2FA
 	// https://github.com/standardfile/ruby-server/blob/master/app/controllers/api/auth_controller.rb#L16
 
@@ -134,6 +167,38 @@ func (h *auth) Login(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, login)
+}
+
+func (h *auth) LoginPKCE(c echo.Context) error {
+	// Filter params
+	var params service.LoginParams
+	if err := c.Bind(&params); err != nil {
+		log.Println("Could not get parameters:", err)
+		return c.JSON(http.StatusBadRequest, sferror.New("Could not get credentials."))
+	}
+	params.UserAgent = c.Request().UserAgent()
+	params.Session = currentSession(c)
+
+	if params.Email == "" || params.Password == "" {
+		return c.JSON(http.StatusBadRequest, sferror.New("No email or password provided."))
+	}
+
+	if params.CodeVerifier == "" {
+		return c.JSON(http.StatusBadRequest, sferror.New("No code verifier provided."))
+	}
+
+	hash := sha256.Sum256([]byte(params.CodeVerifier))
+	base64_hash := fmt.Sprintf("%x", hash[:])
+	res, err := h.db.RemovePKCE(base64.RawStdEncoding.EncodeToString([]byte(base64_hash)))
+	if err != nil {
+		log.Println("Could not retrieve code challenge:", err)
+		return c.JSON(http.StatusBadRequest, sferror.New("Could not get credentials."))
+	}
+	if !res {
+		return c.JSON(http.StatusBadRequest, sferror.New("Challenge not matched."))
+	}
+
+	return h.login(c, params)
 }
 
 ///// Logout

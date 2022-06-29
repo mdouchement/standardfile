@@ -21,6 +21,7 @@ type (
 		UserInteraction
 		SessionInteraction
 		ItemInteraction
+		PKCEInteraction
 	}
 
 	// An UserInteraction defines all the methods used to interact with a user record.
@@ -61,5 +62,10 @@ type (
 		FindItemsForIntegrityCheck(userID string) ([]*model.Item, error)
 		// DeleteItem deletes the item matching the given parameters.
 		DeleteItem(id, userID string) error
+	}
+
+	PKCEInteraction interface {
+		StorePKCE(codeChallenge string) error
+		RemovePKCE(codeChallenge string) (bool, error)
 	}
 )
