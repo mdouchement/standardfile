@@ -67,5 +67,6 @@ type (
 	PKCEInteraction interface {
 		StorePKCE(codeChallenge string) error
 		RemovePKCE(codeChallenge string) (bool, error)
+		DeleteExpiredChallenges() error
 	}
 )

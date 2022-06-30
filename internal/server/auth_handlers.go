@@ -84,13 +84,17 @@ func (h *auth) ParamsPKCE(c echo.Context) error {
 	params.UserAgent = c.Request().UserAgent()
 	params.Session = currentSession(c)
 
-	if params.Email == "" || params.CodeChallenge == "" {
-		return c.JSON(http.StatusBadRequest, sferror.New("No email or code challenge provided."))
+	if params.Email == "" {
+		return c.JSON(http.StatusBadRequest, sferror.New("Please provide an email address."))
+	}
+
+	if params.CodeChallenge == "" {
+		return c.JSON(http.StatusBadRequest, sferror.New("Please provide the code challenge parameter"))
 	}
 
 	if err := h.db.StorePKCE(params.CodeChallenge); err != nil {
 		log.Println("Could not store code challenge:", err)
-		return c.JSON(http.StatusBadRequest, sferror.New("Could not get credentials."))
+		return c.JSON(http.StatusBadRequest, sferror.New("Could not store code challenge."))
 	}
 
 	return h.params(c, params.Email)
@@ -179,12 +183,8 @@ func (h *auth) LoginPKCE(c echo.Context) error {
 	params.UserAgent = c.Request().UserAgent()
 	params.Session = currentSession(c)
 
-	if params.Email == "" || params.Password == "" {
-		return c.JSON(http.StatusBadRequest, sferror.New("No email or password provided."))
-	}
-
-	if params.CodeVerifier == "" {
-		return c.JSON(http.StatusBadRequest, sferror.New("No code verifier provided."))
+	if params.Email == "" || params.Password == "" || params.CodeVerifier == "" {
+		return c.JSON(http.StatusUnauthorized, sferror.New("Invalid login credentials."))
 	}
 
 	hash := sha256.Sum256([]byte(params.CodeVerifier))
