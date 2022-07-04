@@ -68,9 +68,9 @@ func ParseSelect(sql string) (*SelectClause, error) {
 	// LIMIT 2,5
 	if s.Limit != nil {
 		if s.Limit.Offset != nil {
-			sc.Skip = int(parseSQLVal(s.Limit.Offset.(*sqlparser.SQLVal)).(int64))
+			sc.Skip = parseSQLVal(s.Limit.Offset.(*sqlparser.SQLVal)).(int)
 		}
-		sc.Limit = int(parseSQLVal(s.Limit.Rowcount.(*sqlparser.SQLVal)).(int64))
+		sc.Limit = parseSQLVal(s.Limit.Rowcount.(*sqlparser.SQLVal)).(int)
 	}
 
 	// ORDER BY UpdatedAt
@@ -181,7 +181,7 @@ func parseSQLVal(v *sqlparser.SQLVal) (value interface{}) {
 			value = t.UTC()
 		}
 	case sqlparser.IntVal:
-		value, _ = strconv.ParseInt(string(v.Val), 10, 64)
+		value, _ = strconv.Atoi(string(v.Val))
 	case sqlparser.FloatVal:
 		value, _ = strconv.ParseFloat(string(v.Val), 64)
 	case sqlparser.HexNum:
