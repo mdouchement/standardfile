@@ -2,8 +2,6 @@ package server
 
 import (
 	"crypto/sha256"
-	"encoding/base64"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -92,7 +90,9 @@ func (h *auth) ParamsPKCE(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, sferror.New("Please provide the code challenge parameter"))
 	}
 
-	if err := h.db.StorePKCE(params.CodeChallenge); err != nil {
+	pkce := service.NewPKCE(h.db, params.Params)
+
+	if err := pkce.StoreChallenge(params.CodeChallenge); err != nil {
 		log.Println("Could not store code challenge:", err)
 		return c.JSON(http.StatusBadRequest, sferror.New("Could not store code challenge."))
 	}
@@ -187,15 +187,13 @@ func (h *auth) LoginPKCE(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, sferror.New("Invalid login credentials."))
 	}
 
-	hash := sha256.Sum256([]byte(params.CodeVerifier))
-	base64_hash := fmt.Sprintf("%x", hash[:])
-	res, err := h.db.RemovePKCE(base64.RawStdEncoding.EncodeToString([]byte(base64_hash)))
+	pkce := service.NewPKCE(h.db, params.Params)
+
+	computed_challenge := pkce.ComputeChallenge(params.CodeVerifier)
+	err := pkce.CheckChallenge(computed_challenge)
 	if err != nil {
-		log.Println("Could not retrieve code challenge:", err)
+		log.Println("Could not check code challenge:", err)
 		return c.JSON(http.StatusBadRequest, sferror.New("Could not get credentials."))
-	}
-	if !res {
-		return c.JSON(http.StatusBadRequest, sferror.New("Challenge not matched."))
 	}
 
 	return h.login(c, params)

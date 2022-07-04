@@ -238,44 +238,33 @@ func (c *strm) DeleteItem(id, userID string) error {
 	return errors.Wrap(err, "could not delete item")
 }
 
-func (c *strm) DeleteExpiredChallenges() error {
+func (c *strm) RevokeExpiredChallenges() error {
 	err := c.db.Select(q.Lte("ExpireAt", time.Now().UTC())).Delete(&model.PKCE{})
-	if err != nil && !c.IsNotFound(err) {
-		return errors.Wrap(err, "could not delete expired challenges")
+	if c.IsNotFound(err) {
+		return nil
 	}
-	return nil
+	return errors.Wrap(err, "could not delete expired challenges")
 }
 
 func (c *strm) StorePKCE(codeChallenge string) error {
-	err := c.DeleteExpiredChallenges()
-	if err != nil {
-		return err
-	}
 	pkce := &model.PKCE{
 		CodeChallenge: codeChallenge,
 		ExpireAt:      time.Now().Add(1 * time.Hour).UTC(),
 	}
-	err = c.Save(pkce)
+	err := c.Save(pkce)
 	return err
 }
 
-func (c *strm) RemovePKCE(codeChallenge string) (bool, error) {
-	err := c.DeleteExpiredChallenges()
-	if err != nil {
-		return false, err
-	}
-	challenges := make([]*model.PKCE, 0)
-	// Then we look if there's a match
+func (c *strm) RemovePKCE(codeChallenge string) error {
+	err := c.db.Select(q.Eq("CodeChallenge", codeChallenge)).Delete(&model.PKCE{})
+	return errors.Wrap(err, "Could not delete challenge")
+}
+
+func (c *strm) CheckPKCE(codeChallenge string) error {
 	query := c.db.Select(q.Eq("CodeChallenge", codeChallenge))
-	err = query.Find(&challenges)
-	if err != nil && !c.IsNotFound(err) {
-		return false, errors.Wrap(err, "could not find challenges")
+	count, err := query.Count(&model.PKCE{})
+	if count == 0 || c.IsNotFound(err) {
+		return errors.Wrap(err, "Could not match challenge")
 	}
-	matched := len(challenges) > 0
-	// Then we delete matched items
-	err = query.Delete(&model.PKCE{})
-	if err != nil && !c.IsNotFound(err) {
-		return false, errors.Wrap(err, "could not delete challenges")
-	}
-	return matched, err
+	return err
 }
