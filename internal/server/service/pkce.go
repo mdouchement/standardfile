@@ -36,7 +36,7 @@ func NewPKCE(db database.Client, params Params) (s PKCEService) {
 func (s *pkceService) ComputeChallenge(code_verifier string) string {
 	hash := sha256.Sum256([]byte(code_verifier))
 	hex_hash := fmt.Sprintf("%x", hash[:])
-	return base64.RawStdEncoding.EncodeToString([]byte(hex_hash))
+	return base64.RawURLEncoding.EncodeToString([]byte(hex_hash))
 }
 
 func (s *pkceService) StoreChallenge(code_challenge string) error {
