@@ -2,6 +2,8 @@
 address: "localhost:5000"
 # Disable registration
 no_registration: false
+# Show real version in `GET /version'
+show_real_version: false
 # Database folder path; empty value means current directory
 database_path: ""
 # Secret key used for JWT authentication (before 004 and 20200115)
