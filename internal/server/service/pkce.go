@@ -4,24 +4,27 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	"github.com/mdouchement/standardfile/internal/database"
+	"github.com/mdouchement/standardfile/internal/model"
 )
 
 type (
 	// A PKCEService is a service used for managing challenges.
 	PKCEService interface {
-		ComputeChallenge(code_verifier string) string
-		StoreChallenge(code_challenge string) error
-		CheckChallenge(code_challenge string) error
+		ComputeChallenge(codeVerifier string) string
+		StoreChallenge(codeChallenge string) error
+		CheckChallenge(codeChallenge string) error
 	}
 
 	pkceService struct {
 		db     database.Client
-		Params Params `json:"-"`
+		Params Params
 	}
 )
 
+// NewPKCE instantiates a new PKCE service.
 func NewPKCE(db database.Client, params Params) (s PKCEService) {
 	switch params.APIVersion { // for future API increments
 	default:
@@ -33,25 +36,31 @@ func NewPKCE(db database.Client, params Params) (s PKCEService) {
 	return s
 }
 
-func (s *pkceService) ComputeChallenge(code_verifier string) string {
-	hash := sha256.Sum256([]byte(code_verifier))
-	hex_hash := fmt.Sprintf("%x", hash[:])
-	return base64.RawURLEncoding.EncodeToString([]byte(hex_hash))
+func (s *pkceService) ComputeChallenge(codeVerifier string) string {
+	hash := sha256.Sum256([]byte(codeVerifier))
+	hexHash := fmt.Sprintf("%x", hash)
+	return base64.RawURLEncoding.EncodeToString([]byte(hexHash))
 }
 
-func (s *pkceService) StoreChallenge(code_challenge string) error {
+func (s *pkceService) StoreChallenge(codeChallenge string) error {
 	if err := s.db.RevokeExpiredChallenges(); err != nil {
 		return err
 	}
-	return s.db.StorePKCE(code_challenge)
+
+	return s.db.Save(&model.PKCE{
+		CodeChallenge: codeChallenge,
+		ExpireAt:      time.Now().Add(1 * time.Hour).UTC(),
+	})
 }
 
-func (s *pkceService) CheckChallenge(code_challenge string) error {
+func (s *pkceService) CheckChallenge(codeChallenge string) error {
 	if err := s.db.RevokeExpiredChallenges(); err != nil {
 		return err
 	}
-	if err := s.db.CheckPKCE(code_challenge); err != nil {
+
+	if _, err := s.db.FindPKCE(codeChallenge); err != nil {
 		return err
 	}
-	return s.db.RemovePKCE(code_challenge)
+
+	return s.db.RemovePKCE(codeChallenge)
 }

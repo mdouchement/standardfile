@@ -60,7 +60,6 @@ func StormOpen(database string) (Client, error) {
 	}, nil
 }
 
-// Save inserts or updates the entry in database with the given model.
 func (c *strm) Save(m model.Model) error {
 	t := time.Now().UTC()
 	m.SetUpdatedAt(t)
@@ -73,22 +72,18 @@ func (c *strm) Save(m model.Model) error {
 	return errors.Wrap(c.db.Save(m), "could not save the model")
 }
 
-// Delete deletes the entry in database with the given model.
 func (c *strm) Delete(m model.Model) error {
 	return errors.Wrap(c.db.DeleteStruct(m), "could not delete the model")
 }
 
-// Close the database.
 func (c *strm) Close() error {
 	return c.db.Close()
 }
 
-// IsNotFound returns true if err is nil or a not found error.
 func (c *strm) IsNotFound(err error) bool {
 	return errors.Cause(err) == storm.ErrNotFound
 }
 
-// FindUser returns the user for the given id (UUID).
 func (c *strm) FindUser(id string) (*model.User, error) {
 	var user model.User
 	if err := c.db.One("ID", id, &user); err != nil {
@@ -97,7 +92,6 @@ func (c *strm) FindUser(id string) (*model.User, error) {
 	return &user, nil
 }
 
-// FindUserByMail returns the user for the given email.
 func (c *strm) FindUserByMail(email string) (*model.User, error) {
 	var user model.User
 	if err := c.db.One("Email", email, &user); err != nil {
@@ -106,7 +100,6 @@ func (c *strm) FindUserByMail(email string) (*model.User, error) {
 	return &user, nil
 }
 
-// FindSession returns the session for the given id (UUID).
 func (c *strm) FindSession(id string) (*model.Session, error) {
 	var session model.Session
 	if err := c.db.One("ID", id, &session); err != nil {
@@ -115,7 +108,6 @@ func (c *strm) FindSession(id string) (*model.Session, error) {
 	return &session, nil
 }
 
-// FindSessionsByUserID returns all sessions for the given id and user id.
 func (c *strm) FindSessionByUserID(id, userID string) (*model.Session, error) {
 	var session model.Session
 	err := c.db.Select(q.Eq("ID", id), q.Eq("UserID", userID)).First(&session)
@@ -125,7 +117,6 @@ func (c *strm) FindSessionByUserID(id, userID string) (*model.Session, error) {
 	return &session, nil
 }
 
-// FindSessionByAccessToken returns the session for the given id and access token.
 func (c *strm) FindSessionByAccessToken(id, token string) (*model.Session, error) {
 	var session model.Session
 	err := c.db.Select(q.Eq("ID", id), q.Eq("AccessToken", token)).First(&session)
@@ -135,17 +126,15 @@ func (c *strm) FindSessionByAccessToken(id, token string) (*model.Session, error
 	return &session, nil
 }
 
-// FindSessionByTokens returns the session for the given id, access and refresh token.
 func (c *strm) FindSessionByTokens(id, access, refresh string) (*model.Session, error) {
 	var session model.Session
 	err := c.db.Select(q.Eq("ID", id), q.Eq("AccessToken", access), q.Eq("RefreshToken", refresh)).First(&session)
 	if err != nil {
-		return nil, errors.Wrap(err, "find session by tokens")
+		return nil, errors.Wrap(err, "could not find session by tokens")
 	}
 	return &session, nil
 }
 
-// FindSessionsByUserID returns all the sessions for the given user id.
 func (c *strm) FindSessionsByUserID(userID string) ([]*model.Session, error) {
 	sessions := make([]*model.Session, 0)
 	err := c.db.Select(q.Eq("UserID", userID)).OrderBy("CreatedAt").Find(&sessions)
@@ -155,7 +144,6 @@ func (c *strm) FindSessionsByUserID(userID string) ([]*model.Session, error) {
 	return sessions, nil
 }
 
-// FindActiveSessionsByUserID returns all active sessions for the given user id.
 func (c *strm) FindActiveSessionsByUserID(userID string) ([]*model.Session, error) {
 	sessions := make([]*model.Session, 0)
 	err := c.db.Select(q.Eq("UserID", userID), q.Gt("ExpireAt", time.Now())).OrderBy("CreatedAt").Find(&sessions)
@@ -165,7 +153,6 @@ func (c *strm) FindActiveSessionsByUserID(userID string) ([]*model.Session, erro
 	return sessions, nil
 }
 
-// FindItem returns the item for the given id (UUID).
 func (c *strm) FindItem(id string) (*model.Item, error) {
 	var item model.Item
 	if err := c.db.One("ID", id, &item); err != nil {
@@ -174,16 +161,12 @@ func (c *strm) FindItem(id string) (*model.Item, error) {
 	return &item, nil
 }
 
-// FindItemByUserID returns the item for the given id and user id (UUID).
 func (c *strm) FindItemByUserID(id, userID string) (*model.Item, error) {
 	var item model.Item
 	err := c.db.Select(q.Eq("ID", id), q.Eq("UserID", userID)).First(&item)
 	return &item, errors.Wrap(err, "could not find item by user id")
 }
 
-// FindItemsByParams returns all the matching records for the given parameters.
-// It also returns a boolean to true if there is more items than the given limit.
-// limit equals to 0 means all items.
 func (c *strm) FindItemsByParams(userID, contentType string, updated time.Time, strictTime, noDeleted bool, limit int) ([]*model.Item, bool, error) {
 	query := []q.Matcher{q.Eq("UserID", userID)}
 
@@ -222,7 +205,6 @@ func (c *strm) FindItemsByParams(userID, contentType string, updated time.Time, 
 	return items, overLimit, nil
 }
 
-// FindItemsForIntegrityCheck returns valid items for computing data signature forthe given user.
 func (c *strm) FindItemsForIntegrityCheck(userID string) ([]*model.Item, error) {
 	items := make([]*model.Item, 0)
 	err := c.db.Select(q.Eq("UserID", userID), q.Eq("Deleted", false), q.Not(q.Eq("ContentType", nil))).Find(&items)
@@ -232,10 +214,18 @@ func (c *strm) FindItemsForIntegrityCheck(userID string) ([]*model.Item, error) 
 	return items, nil
 }
 
-// DeleteItem deletes the item matching the given parameters.
 func (c *strm) DeleteItem(id, userID string) error {
 	err := c.db.Select(q.Eq("ID", id), q.Eq("UserID", userID)).Delete(&model.Item{})
 	return errors.Wrap(err, "could not delete item")
+}
+
+func (c *strm) FindPKCE(codeChallenge string) (*model.PKCE, error) {
+	var pkce model.PKCE
+	err := c.db.Select(q.Eq("CodeChallenge", codeChallenge)).First(&pkce)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not find pkce")
+	}
+	return &pkce, nil
 }
 
 func (c *strm) RevokeExpiredChallenges() error {
@@ -246,25 +236,7 @@ func (c *strm) RevokeExpiredChallenges() error {
 	return errors.Wrap(err, "could not delete expired challenges")
 }
 
-func (c *strm) StorePKCE(codeChallenge string) error {
-	pkce := &model.PKCE{
-		CodeChallenge: codeChallenge,
-		ExpireAt:      time.Now().Add(1 * time.Hour).UTC(),
-	}
-	err := c.Save(pkce)
-	return err
-}
-
 func (c *strm) RemovePKCE(codeChallenge string) error {
 	err := c.db.Select(q.Eq("CodeChallenge", codeChallenge)).Delete(&model.PKCE{})
 	return errors.Wrap(err, "Could not delete challenge")
-}
-
-func (c *strm) CheckPKCE(codeChallenge string) error {
-	query := c.db.Select(q.Eq("CodeChallenge", codeChallenge))
-	count, err := query.Count(&model.PKCE{})
-	if count == 0 || c.IsNotFound(err) {
-		return errors.Wrap(err, "Could not match challenge")
-	}
-	return err
 }

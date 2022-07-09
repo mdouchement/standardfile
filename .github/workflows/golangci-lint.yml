@@ -1,23 +1,26 @@
 on:
 - push
 - pull_request
-name: Test
+name: golangci-lint
+permissions:
+  contents: read
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  # pull-requests: read
 env:
   GO_VERSION: "~1"
 jobs:
   test:
-    name: Test
+    name: golangci-lint
     runs-on: ubuntu-latest
     steps:
-    #
     - name: Install Go
       uses: actions/setup-go@v3
       with:
         go-version: ${{ env.GO_VERSION }}
         check-latest: true
-    - name: Tooling
-      run: go install gotest.tools/gotestsum@latest
     - name: Checkout code
       uses: actions/checkout@v2
-    - name: Test
-      run: gotestsum
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest

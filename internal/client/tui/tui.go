@@ -59,13 +59,13 @@ func (ui *TUI) SortItems() {
 
 // DisplayStatus displays a message in the status bar (aka notifications).
 func (ui *TUI) DisplayStatus(message string) {
-	ui.App.Run(gowid.RunFunction(func(app gowid.IApp) {
+	ui.App.Run(gowid.RunFunction(func(app gowid.IApp) { // nolint:errcheck
 		ui.status.SetText(message, ui.App)
 	}))
 	go func() {
 		timer := time.NewTimer(1200 * time.Millisecond)
 		<-timer.C
-		ui.App.Run(gowid.RunFunction(func(app gowid.IApp) {
+		ui.App.Run(gowid.RunFunction(func(app gowid.IApp) { // nolint:errcheck
 			ui.status.SetText("", ui.App)
 		}))
 	}()
