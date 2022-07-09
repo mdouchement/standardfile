@@ -210,6 +210,87 @@ func TestRequestLogout20200115(t *testing.T) {
 	})
 }
 
+func TestRequestLoginPKCE20200115(t *testing.T) {
+	engine, ctrl, r, cleanup := setup()
+	defer cleanup()
+
+	sessions := session.NewManager(ctrl.Database, ctrl.SigningKey, ctrl.SessionSecret, ctrl.AccessTokenExpirationTime, ctrl.RefreshTokenExpirationTime)
+	user, session := createUserWithSession(ctrl)
+
+	params := gofight.D{
+		"api":   libsf.APIVersion20200115,
+		"email": "george.abitbol@nowhere.lan",
+	}
+	r.POST("/v2/login-params").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusBadRequest, r.Code)
+		assert.JSONEq(t, `{"error":{"message":"Please provide the code challenge parameter"}}`, r.Body.String())
+	})
+
+	params["code_challenge"] = "MTFjYmFiZmNhODU5MTJlNWYxMzNhOGY0YWI2OWY4MzQ1ZTZhMDZlNDVjOTU5NjQ0YWQ5ZmFlOTA5NWY4MmZmNA"
+	r.POST("/v2/login-params").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusOK, r.Code)
+
+		v, err := fastjson.Parse(r.Body.String())
+		assert.NoError(t, err)
+
+		//
+		assert.Equal(t, user.Version, string(v.Get("version").GetStringBytes()))
+		assert.Equal(t, user.Email, string(v.Get("identifier").GetStringBytes()))
+		assert.Equal(t, user.PasswordNonce, string(v.Get("pw_nonce").GetStringBytes()))
+	})
+
+	r.POST("/v2/login-params").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusOK, r.Code)
+
+		v, err := fastjson.Parse(r.Body.String())
+		assert.NoError(t, err)
+
+		//
+		assert.Equal(t, user.Version, string(v.Get("version").GetStringBytes()))
+		assert.Equal(t, user.Email, string(v.Get("identifier").GetStringBytes()))
+		assert.Equal(t, user.PasswordNonce, string(v.Get("pw_nonce").GetStringBytes()))
+	})
+
+	params["password"] = "password42"
+	r.POST("/v2/login").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.JSONEq(t, `{"error":{"message":"Invalid login credentials."}}`, r.Body.String())
+	})
+
+	params["code_verifier"] = "90308e36cbb7051f2f97634f794e5e323fb8d06d6076c1ed0f7e45bb704ebce1"
+	r.POST("/v2/login").SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusOK, r.Code)
+
+		v, err := fastjson.Parse(r.Body.String())
+		assert.NoError(t, err)
+
+		//
+		assert.Equal(t, user.Version, string(v.Get("user", "version").GetStringBytes()))
+		assert.Regexp(t, `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`, string(v.Get("user", "uuid").GetStringBytes()))
+		assert.Equal(t, user.Email, string(v.Get("user", "email").GetStringBytes()))
+		assert.Equal(t, user.PasswordNonce, string(v.Get("user", "pw_nonce").GetStringBytes()))
+		assert.Equal(t, user.PasswordCost, v.Get("user", "pw_cost").GetInt())
+		//
+		assert.Regexp(t, `^v2.local.[A-Za-z0-9+_\-]+$`, string(v.Get("session", "access_token").GetStringBytes()))
+		assert.Regexp(t, `^v2.local.[A-Za-z0-9+_\-]+$`, string(v.Get("session", "refresh_token").GetStringBytes()))
+
+		assert.InEpsilon(t, sessions.AccessTokenExprireAt(session).UnixNano()/int64(time.Millisecond), v.GetInt64("session", "access_expiration"), 1000)
+		assert.InEpsilon(t, session.ExpireAt.UnixNano()/int64(time.Millisecond), v.GetInt64("session", "refresh_expiration"), 1000)
+
+		//
+		//
+
+		timestamp, err := time.Parse(time.RFC3339, string(v.Get("user", "created_at").GetStringBytes()))
+		assert.NoError(t, err)
+		assert.Equal(t, user.CreatedAt.UTC(), timestamp.UTC())
+
+		timestamp, err = time.Parse(time.RFC3339, string(v.Get("user", "updated_at").GetStringBytes()))
+		assert.NoError(t, err)
+		assert.Equal(t, user.UpdatedAt.UTC(), timestamp.UTC())
+	})
+
+}
+
 func TestRequestUpdate20200115(t *testing.T) {
 	engine, ctrl, r, cleanup := setup()
 	defer cleanup()

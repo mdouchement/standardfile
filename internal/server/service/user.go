@@ -40,8 +40,10 @@ type (
 	// LoginParams are used to login a user.
 	LoginParams struct {
 		Params
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email         string `json:"email"`
+		Password      string `json:"password"`
+		CodeChallenge string `json:"code_challenge"`
+		CodeVerifier  string `json:"code_verifier"`
 	}
 
 	// UpdateUserParams are used to update a user.

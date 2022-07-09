@@ -237,3 +237,34 @@ func (c *strm) DeleteItem(id, userID string) error {
 	err := c.db.Select(q.Eq("ID", id), q.Eq("UserID", userID)).Delete(&model.Item{})
 	return errors.Wrap(err, "could not delete item")
 }
+
+func (c *strm) RevokeExpiredChallenges() error {
+	err := c.db.Select(q.Lte("ExpireAt", time.Now().UTC())).Delete(&model.PKCE{})
+	if c.IsNotFound(err) {
+		return nil
+	}
+	return errors.Wrap(err, "could not delete expired challenges")
+}
+
+func (c *strm) StorePKCE(codeChallenge string) error {
+	pkce := &model.PKCE{
+		CodeChallenge: codeChallenge,
+		ExpireAt:      time.Now().Add(1 * time.Hour).UTC(),
+	}
+	err := c.Save(pkce)
+	return err
+}
+
+func (c *strm) RemovePKCE(codeChallenge string) error {
+	err := c.db.Select(q.Eq("CodeChallenge", codeChallenge)).Delete(&model.PKCE{})
+	return errors.Wrap(err, "Could not delete challenge")
+}
+
+func (c *strm) CheckPKCE(codeChallenge string) error {
+	query := c.db.Select(q.Eq("CodeChallenge", codeChallenge))
+	count, err := query.Count(&model.PKCE{})
+	if count == 0 || c.IsNotFound(err) {
+		return errors.Wrap(err, "Could not match challenge")
+	}
+	return err
+}
