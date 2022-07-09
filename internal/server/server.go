@@ -16,9 +16,10 @@ import (
 
 // A Controller is an Iversion Of Control pattern used to init the server package.
 type Controller struct {
-	Version        string
-	Database       database.Client
-	NoRegistration bool
+	Version         string
+	Database        database.Client
+	NoRegistration  bool
+	ShowRealVersion bool
 	// JWT params
 	SigningKey []byte
 	// Session params
@@ -69,8 +70,13 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	// generic handlers
 	//
 	router.GET("/version", func(c echo.Context) error {
+		version := "n/a"
+		if ctrl.ShowRealVersion {
+			version = ctrl.Version
+		}
+
 		return c.JSON(http.StatusOK, echo.Map{
-			"version": ctrl.Version,
+			"version": version,
 		})
 	})
 

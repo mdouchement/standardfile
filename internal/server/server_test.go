@@ -59,6 +59,7 @@ func setup() (engine *echo.Echo, ctrl server.Controller, r *gofight.RequestConfi
 		Version:                    "test",
 		Database:                   db,
 		NoRegistration:             false,
+		ShowRealVersion:            true,
 		SigningKey:                 []byte("secret"),
 		SessionSecret:              []byte("00000000000000000000000000000000"),
 		AccessTokenExpirationTime:  60 * 24 * time.Hour,

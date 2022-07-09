@@ -140,6 +140,7 @@ var (
 				Version:                    version,
 				Database:                   db,
 				NoRegistration:             konf.Bool("no_registration"),
+				ShowRealVersion:            konf.Bool("show_real_version"),
 				SigningKey:                 konf.MustBytes("secret_key"),
 				SessionSecret:              kdf(32, konf.MustBytes("session.secret")),
 				AccessTokenExpirationTime:  konf.MustDuration("session.access_token_ttl"),
