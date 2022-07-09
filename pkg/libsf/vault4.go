@@ -181,6 +181,7 @@ func (d *authenticatedData) toSortedKeysJSON() []byte {
 ///
 //
 
+// nolint:deadcode,unused
 func kdf4s(password, salt string) ([]byte, error) {
 	s, err := hex.DecodeString(salt)
 	if err != nil {

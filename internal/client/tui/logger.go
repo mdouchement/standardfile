@@ -13,6 +13,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+// nolint:deadcode,unused
 func debug(v interface{}, verbose ...bool) {
 	if len(verbose) > 0 && verbose[0] {
 		NewLogger().Println(litter.Sdump(v))

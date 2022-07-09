@@ -64,10 +64,13 @@ type (
 		DeleteItem(id, userID string) error
 	}
 
+	// A PKCEInteraction defines all the methods used to interact with PKCE mechanism.
 	PKCEInteraction interface {
-		StorePKCE(codeChallenge string) error
+		// FindPKCE returns the item for the given code.
+		FindPKCE(codeChallenge string) (*model.PKCE, error)
+		// RemovePKCE removes from database the given challenge code.
 		RemovePKCE(codeChallenge string) error
-		CheckPKCE(codeChallenge string) error
+		// RevokeExpiredChallenges removes from database all old challenge codes.
 		RevokeExpiredChallenges() error
 	}
 )

@@ -13,15 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     #
-    # Workaround until https://github.com/actions/setup-go/pull/184 merged
-    - name: Remove Golang from cache
-      run: rm -rf ${RUNNER_TOOL_CACHE}/go
-    #
     - name: Install Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ env.GO_VERSION }}
-      id: go
+        check-latest: true
     #
     - name: Tooling(checksum)
       run: go install github.com/mdouchement/checksum@master

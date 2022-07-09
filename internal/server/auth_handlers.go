@@ -73,6 +73,7 @@ func (h *auth) Params(c echo.Context) error {
 	return h.params(c, email)
 }
 
+// ParamsPKCE used for password generation with PKCE protection mechanism.
 func (h *auth) ParamsPKCE(c echo.Context) error {
 	var params service.LoginParams
 	if err := c.Bind(&params); err != nil {
@@ -139,7 +140,7 @@ func (h *auth) params(c echo.Context, email string) error {
 ////
 //
 
-// Login used for authenticates a user and returns a JWT.
+// Login used for authenticates a user and returns a JWT or a session.
 // https://standardfile.org/#post-auth-sign_in
 func (h *auth) Login(c echo.Context) error {
 	// Filter params
@@ -159,20 +160,7 @@ func (h *auth) Login(c echo.Context) error {
 
 }
 
-func (h *auth) login(c echo.Context, params service.LoginParams) error {
-
-	// TODO 2FA
-	// https://github.com/standardfile/ruby-server/blob/master/app/controllers/api/auth_controller.rb#L16
-
-	service := service.NewUser(h.db, h.sessions, params.APIVersion)
-	login, err := service.Login(params)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(http.StatusOK, login)
-}
-
+// LoginPKCE used for authenticates like Login but add also PKCE mechanism.
 func (h *auth) LoginPKCE(c echo.Context) error {
 	// Filter params
 	var params service.LoginParams
@@ -189,14 +177,27 @@ func (h *auth) LoginPKCE(c echo.Context) error {
 
 	pkce := service.NewPKCE(h.db, params.Params)
 
-	computed_challenge := pkce.ComputeChallenge(params.CodeVerifier)
-	err := pkce.CheckChallenge(computed_challenge)
+	challenge := pkce.ComputeChallenge(params.CodeVerifier)
+	err := pkce.CheckChallenge(challenge)
 	if err != nil {
 		log.Println("Could not check code challenge:", err)
 		return c.JSON(http.StatusBadRequest, sferror.New("Could not get credentials."))
 	}
 
 	return h.login(c, params)
+}
+
+func (h *auth) login(c echo.Context, params service.LoginParams) error {
+	// TODO 2FA
+	// https://github.com/standardfile/ruby-server/blob/master/app/controllers/api/auth_controller.rb#L16
+
+	service := service.NewUser(h.db, h.sessions, params.APIVersion)
+	login, err := service.Login(params)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, login)
 }
 
 ///// Logout
