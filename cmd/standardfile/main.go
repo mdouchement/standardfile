@@ -80,6 +80,33 @@ func kdf(l int, k []byte) []byte {
 	return payload
 }
 
+/// keyFromConfig reads a key from the configuration, and if it's not present, tries to read it from a file instead
+func keyFromConfig(konf *koanf.Koanf, path string) (out []byte, err error) {
+	// check if the key is directly placed in the config file
+	out = konf.Bytes(path)
+	if len(out) > 0 {
+		return out, nil
+	}
+
+	// check if the key is available as a systemd credential
+	credsDir := os.Getenv("CREDENTIALS_DIRECTORY")
+	if credsDir == "" {
+		return nil, errors.New("not found")
+	}
+	filename := filepath.Join(credsDir, path)
+
+	out, err = os.ReadFile(filename)
+	if err != nil {
+		return nil, errors.Wrap(err, "file read")
+	}
+
+	if len(out) == 0 {
+		return nil, errors.New("file empty")
+	}
+
+	return out, nil
+}
+
 var (
 	initCmd = &cobra.Command{
 		Use:   "init",
@@ -122,12 +149,14 @@ var (
 				return err
 			}
 
-			if konf.String("secret_key") == "" {
-				return errors.New("secret_key not found")
+			configSecretKey, err := keyFromConfig(konf, "secret_key")
+			if err != nil {
+				return errors.Wrap(err, "secret key")
 			}
 
-			if konf.String("session.secret") == "" {
-				return errors.New("session secret not found")
+			configSessionSecret, err := keyFromConfig(konf, "session.secret")
+			if err != nil {
+				return errors.Wrap(err, "session secret")
 			}
 
 			db, err := database.StormOpen(dbnameWithPath(konf.String("database_path")))
@@ -141,8 +170,8 @@ var (
 				Database:                   db,
 				NoRegistration:             konf.Bool("no_registration"),
 				ShowRealVersion:            konf.Bool("show_real_version"),
-				SigningKey:                 konf.MustBytes("secret_key"),
-				SessionSecret:              kdf(32, konf.MustBytes("session.secret")),
+				SigningKey:                 configSecretKey,
+				SessionSecret:              kdf(32, configSessionSecret),
 				AccessTokenExpirationTime:  konf.MustDuration("session.access_token_ttl"),
 				RefreshTokenExpirationTime: konf.MustDuration("session.refresh_token_ttl"),
 			})
