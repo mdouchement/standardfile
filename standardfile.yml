@@ -1,6 +1,9 @@
 # Secrets can optionally be provided by the systemd LoadCredential directive. Example:
 #   LoadCredential=secret_key:/var/lib/standardfile/secret_key.txt
 #   LoadCredential=session.secret:/var/lib/standardfile/session_secret.txt
+#
+# Unix socket can be supported by setting `address: "unix:/var/run/standarfile.sock"`.
+# An additional parameter can be added to define custom unix permissions `socket_mode: 0660`.
 
 # Address to bind
 address: "localhost:5000"
@@ -19,4 +22,3 @@ session:
   secret: paseto-development
   access_token_ttl: 1440h # 60 days expressed in Golang's time.Duration format
   refresh_token_ttl: 8760h # 1 year
-
