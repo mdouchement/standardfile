@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"io/fs"
 	"log"
 	"net"
 	"os"
@@ -192,6 +193,13 @@ var (
 				listener, err := net.Listen(parts[0], socketFile)
 				if err != nil {
 					return err
+				}
+
+				if socketMode := konf.Int("socket_mode"); socketMode != 0 {
+					mode := fs.FileMode(socketMode)
+					if err := os.Chmod(socketFile, mode); err != nil {
+						return errors.Wrap(err, fmt.Sprintf("chmod %s %#o", socketFile, mode))
+					}
 				}
 
 				return errors.Wrap(engine.Server.Serve(listener), message)
