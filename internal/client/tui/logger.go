@@ -2,7 +2,7 @@ package tui
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"strings"
 	"sync"
@@ -27,7 +27,7 @@ func NewLogger() logrus.StdLogger {
 	formatter := new(logFormatter)
 
 	log := logrus.New()
-	log.SetOutput(ioutil.Discard) // stdout & stderr to /dev/null
+	log.SetOutput(io.Discard) // stdout & stderr to /dev/null
 	log.SetFormatter(formatter)
 	log.Hooks.Add(&fileHook{
 		rotate: &lumberjack.Logger{

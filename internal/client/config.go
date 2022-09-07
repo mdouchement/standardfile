@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -43,7 +42,7 @@ func Load() (Config, error) {
 		},
 	}
 
-	ciphertext, err := ioutil.ReadFile(credentialsfile)
+	ciphertext, err := os.ReadFile(credentialsfile)
 	if err != nil {
 		return cfg, errors.Wrap(err, "could not read credentials file")
 	}

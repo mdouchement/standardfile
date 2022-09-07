@@ -1,7 +1,6 @@
 package server_test
 
 import (
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -43,7 +42,7 @@ func TestRequestVersion(t *testing.T) {
 }
 
 func setup() (engine *echo.Echo, ctrl server.Controller, r *gofight.RequestConfig, cleanup func()) {
-	tmpfile, err := ioutil.TempFile("", "standardfile.*.db")
+	tmpfile, err := os.CreateTemp("", "standardfile.*.db")
 	if err != nil {
 		panic(err)
 	}

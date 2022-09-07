@@ -2,7 +2,7 @@ package client
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/mdouchement/standardfile/pkg/libsf"
@@ -19,7 +19,7 @@ func Unseal(filename string) error {
 	//
 	//
 
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return errors.Wrap(err, "could not load file")
 	}
