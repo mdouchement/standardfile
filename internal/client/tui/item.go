@@ -12,7 +12,7 @@ import (
 	"github.com/gcla/gowid/widgets/styled"
 	"github.com/gcla/gowid/widgets/text"
 	"github.com/gcla/gowid/widgets/vscroll"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/mdouchement/standardfile/pkg/libsf"
 )
 

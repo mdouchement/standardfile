@@ -6,7 +6,7 @@ import (
 
 	"github.com/gcla/gowid"
 	"github.com/gcla/gowid/widgets/list"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 )
 
 // A NoteList is a list of Items to interract with.
