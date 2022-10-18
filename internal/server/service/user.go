@@ -61,6 +61,7 @@ type (
 		Identifier      string `json:"identifier"`
 		CurrentPassword string `json:"current_password"`
 		NewPassword     string `json:"new_password"`
+		NewEmail        string `json:"new_email"`
 	}
 
 	// Success handler that generates response payload.
@@ -182,6 +183,11 @@ func (s *userServiceBase) password(user *model.User, params UpdatePasswordParams
 	}
 	user.Password = pw
 	user.PasswordUpdatedAt = time.Now().Unix()
+
+	// Only update email, when parameter available
+	if params.NewEmail != "" {
+		user.Email = params.NewEmail
+	}
 
 	s.apply(user, params.UpdateUserParams)
 
