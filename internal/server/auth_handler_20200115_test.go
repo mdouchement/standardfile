@@ -455,4 +455,31 @@ func TestRequestUpdatePassword20200115(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, r.Code)
 		assert.JSONEq(t, `{"error":{"message":"The current password you entered is incorrect. Please try again."}}`, r.Body.String())
 	})
+
+	// If no email available, ensure no email updates
+	params["current_password"] = "yolo!"
+	r.PUT("/v1/users/419af151-78d7-4a6b-852e-cf603578eb63/attributes/credentials").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusOK, r.Code)
+
+		user, err := ctrl.Database.FindUser(user.ID) // reload user
+		assert.NoError(t, err)
+
+		assert.Equal(t, user.Email, "george.abitbol@nowhere.lan")
+	})
+
+	// If a new email is provided, check it's correctly updated
+	params["current_password"] = "yolo!"
+	params["new_email"] = "test@test.de"
+	r.PUT("/v1/users/419af151-78d7-4a6b-852e-cf603578eb63/attributes/credentials").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusOK, r.Code)
+
+		v, err := fastjson.Parse(r.Body.String())
+		assert.NoError(t, err)
+
+		user, err = ctrl.Database.FindUser(user.ID) // reload user
+		assert.NoError(t, err)
+
+		assert.Equal(t, user.Email, string(v.Get("user", "email").GetStringBytes()))
+		assert.Equal(t, user.Email, params["new_email"])
+	})
 }
