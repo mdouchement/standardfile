@@ -458,7 +458,7 @@ func TestRequestUpdatePassword20200115(t *testing.T) {
 
 	// If no email available, ensure no email updates
 	params["current_password"] = "yolo!"
-	r.PUT("/v1/users/419af151-78d7-4a6b-852e-cf603578eb63/attributes/credentials").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+	r.PUT("/v1/users/"+user.ID+"/attributes/credentials").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusOK, r.Code)
 
 		user, err := ctrl.Database.FindUser(user.ID) // reload user
@@ -470,7 +470,7 @@ func TestRequestUpdatePassword20200115(t *testing.T) {
 	// If a new email is provided, check it's correctly updated
 	params["current_password"] = "yolo!"
 	params["new_email"] = "test@test.de"
-	r.PUT("/v1/users/419af151-78d7-4a6b-852e-cf603578eb63/attributes/credentials").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+	r.PUT("/v1/users/"+user.ID+"/attributes/credentials").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusOK, r.Code)
 
 		v, err := fastjson.Parse(r.Body.String())
@@ -481,5 +481,12 @@ func TestRequestUpdatePassword20200115(t *testing.T) {
 
 		assert.Equal(t, user.Email, string(v.Get("user", "email").GetStringBytes()))
 		assert.Equal(t, user.Email, params["new_email"])
+	})
+
+	// If the user id parameter is different from the request's bearer token
+	params["current_password"] = "yolo!"
+	params["new_email"] = "test@test.de"
+	r.PUT("/v1/users/DIFFERENT-ID-THAN-IN-BEARER-TOKEN/attributes/credentials").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code)
 	})
 }

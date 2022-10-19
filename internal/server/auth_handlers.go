@@ -254,6 +254,7 @@ func (h *auth) UpdatePassword(c echo.Context) error {
 		log.Println("Could not get parameters:", err)
 		return c.JSON(http.StatusUnauthorized, sferror.New("Could not get parameters."))
 	}
+
 	params.UserAgent = c.Request().UserAgent()
 	params.Session = currentSession(c)
 
@@ -269,8 +270,16 @@ func (h *auth) UpdatePassword(c echo.Context) error {
 			sferror.New("Your new password is required to change your password. Please update your application if you do not see this option."))
 	}
 
+	user := currentUser(c)
+
+	// When id parameter passed, check it's the same like in bearer token
+	if c.Param("id") != "" && c.Param("id") != user.ID {
+		err := "User id parameter is different from the request's bearer token: " + c.Param("id") + " vs " + user.ID
+		return c.JSON(http.StatusUnauthorized, sferror.New(err))
+	}
+
 	service := service.NewUser(h.db, h.sessions, params.APIVersion)
-	password, err := service.Password(currentUser(c), params)
+	password, err := service.Password(user, params)
 	if err != nil {
 		return err
 	}
