@@ -1,10 +1,17 @@
 package server
 
 import (
+	"bufio"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"sort"
 	"time"
+
+	"encoding/base64"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -29,13 +36,37 @@ type Controller struct {
 	RefreshTokenExpirationTime time.Duration
 }
 
+type Resource struct {
+	RemoteIdentifier string `json:"remoteIdentifier"`
+}
+
+type ValetRequestParams struct {
+	Operation string `json:"operation"`
+	Resources []Resource
+}
+
+type ValetToken struct {
+	Authorization string `json:"authorization"`
+	FileId        string `json:"fileId"`
+}
+
+func (token *ValetToken) GetFilePath() string {
+	// TODO check format of fileID
+	return "/etc/standardfile/database/" + token.FileId
+}
+
 // EchoEngine instantiates the wep server.
 func EchoEngine(ctrl Controller) *echo.Echo {
 	engine := echo.New()
 	engine.Use(middleware.Recover())
 	// engine.Use(middleware.CSRF()) // not supported by StandardNotes
 	engine.Use(middleware.Secure())
-	engine.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
+
+	// Expose headers for file download
+	cors := middleware.DefaultCORSConfig
+	cors.ExposeHeaders = append(cors.ExposeHeaders, "Content-Range", "Accept-Ranges")
+	engine.Use(middleware.CORSWithConfig(cors))
+
 	engine.Use(middleware.Gzip())
 
 	engine.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -68,6 +99,7 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	v1 := router.Group("/v1")
 	v1restricted := restricted.Group("/v1")
 
+	//
 	// generic handlers
 	//
 	router.GET("/version", func(c echo.Context) error {
@@ -142,7 +174,149 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	v2 := router.Group("/v2")
 	v2.POST("/login", auth.LoginPKCE)
 	v2.POST("/login-params", auth.ParamsPKCE)
-	//v2restricted := restricted.Group("/v2")
+
+	//
+	// files
+	//
+	v1restricted.POST("/files/valet-tokens", func(c echo.Context) error {
+		var params ValetRequestParams
+		if err := c.Bind(&params); err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+
+		if len(params.Resources) != 1 {
+			return c.JSON(http.StatusBadRequest, "Multi file requests not supported")
+		}
+
+		// {"operation":"write","resources":[{"remoteIdentifier":"2ef2a4af-2a3c-41ac-b409-78471e6f4a81","unencryptedFileSize":3427}]}
+		// {"operation":"delete","resources":[{"remoteIdentifier":"b0383bfa-8d9f-4023-8aa1-5c9e3011a0ef","unencryptedFileSize":0}]}
+		// {"operation":"read","resources":[{"remoteIdentifier":"2ef2a4af-2a3c-41ac-b409-78471e6f4a81","unencryptedFileSize":0}]}
+
+		var token ValetToken
+		token.Authorization = c.Request().Header.Get(echo.HeaderAuthorization)
+		token.FileId = params.Resources[0].RemoteIdentifier
+		valetTokenJson, err := json.Marshal(token)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+
+		// token := auth + " " + fileId
+		return c.JSON(http.StatusOK, echo.Map{
+			"success":    true,
+			"valetToken": base64.StdEncoding.EncodeToString(valetTokenJson),
+		})
+	})
+	v1.POST("/files/upload/create-session", func(c echo.Context) error {
+		valetTokenBase64 := c.Request().Header.Get("x-valet-token")
+		valetTokenBytes, err := base64.StdEncoding.DecodeString(valetTokenBase64)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+		valetTokenJson := string(valetTokenBytes)
+
+		var token ValetToken
+		if err := json.Unmarshal([]byte(valetTokenJson), &token); err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+
+		fmt.Println("create-session. valet_token: " + valetTokenJson)
+
+		if _, err := os.Create(token.GetFilePath()); err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+
+		return c.JSON(http.StatusOK, echo.Map{
+			"success":  true,
+			"uploadId": token.FileId,
+		})
+	})
+	v1.POST("/files/upload/close-session", func(c echo.Context) error {
+		valetTokenBase64 := c.Request().Header.Get("x-valet-token")
+		valetTokenBytes, err := base64.StdEncoding.DecodeString(valetTokenBase64)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+		valetTokenJson := string(valetTokenBytes)
+		var token ValetToken
+		if err := json.Unmarshal([]byte(valetTokenJson), &token); err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		} else if _, err := os.Stat(token.GetFilePath()); errors.Is(err, os.ErrNotExist) {
+			return c.JSON(http.StatusBadRequest, "File not created")
+		}
+
+		fmt.Println("close-session. valet_token: " + valetTokenJson)
+		return c.JSON(http.StatusOK, echo.Map{
+			"success": true,
+			"message": "File uploaded successfully",
+		})
+	})
+	v1.POST("/files/upload/chunk", func(c echo.Context) error {
+		valetTokenBase64 := c.Request().Header.Get("x-valet-token")
+		valetTokenBytes, err := base64.StdEncoding.DecodeString(valetTokenBase64)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+		valetTokenJson := string(valetTokenBytes)
+		var token ValetToken
+		if err := json.Unmarshal([]byte(valetTokenJson), &token); err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		} else if _, err := os.Stat(token.GetFilePath()); errors.Is(err, os.ErrNotExist) {
+			return c.JSON(http.StatusBadRequest, "File not created")
+		}
+
+		chunk_id := c.Request().Header.Get("x-chunk-id")
+		fmt.Println("chunk. valet_token: " + valetTokenJson + " chunk_id: " + chunk_id)
+
+		f, err := os.OpenFile(token.GetFilePath(), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+		// remember to close the file
+		defer f.Close()
+
+		// create new buffer
+		writer := bufio.NewWriter(f)
+		reader := c.Request().Body
+		io.Copy(writer, reader)
+
+		return c.JSON(http.StatusOK, echo.Map{
+			"success": true,
+			"message": "Chunk uploaded successfully",
+		})
+	})
+	v1.DELETE("/files", func(c echo.Context) error {
+		valetTokenBase64 := c.Request().Header.Get("x-valet-token")
+		valetTokenBytes, err := base64.StdEncoding.DecodeString(valetTokenBase64)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+		valetTokenJson := string(valetTokenBytes)
+		var token ValetToken
+		if err := json.Unmarshal([]byte(valetTokenJson), &token); err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+		err = os.Remove(token.GetFilePath())
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+		return c.JSON(http.StatusOK, echo.Map{
+			"success": true,
+			"message": "File removed successfully",
+		})
+	})
+	v1.GET("/files", func(c echo.Context) error {
+		valetTokenBase64 := c.Request().Header.Get("x-valet-token")
+		valetTokenBytes, err := base64.StdEncoding.DecodeString(valetTokenBase64)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+		valetTokenJson := string(valetTokenBytes)
+		var token ValetToken
+		if err := json.Unmarshal([]byte(valetTokenJson), &token); err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+		return c.File(token.GetFilePath())
+	})
 
 	//
 	// subscription handlers
