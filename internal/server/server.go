@@ -97,11 +97,11 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	restricted.POST("/auth/sign_out", auth.Logout)
 	restricted.POST("/auth/update", auth.Update)
 	restricted.POST("/auth/change_pw", auth.UpdatePassword)
-	v1restricted.PUT("/users/:id/attributes/credentials", auth.UpdatePassword)
 
 	v1.GET("/login-params", auth.Params)
 	v1.POST("/login", auth.Login)
 	v1restricted.POST("/logout", auth.Logout)
+	v1restricted.PUT("/users/:id/attributes/credentials", auth.UpdatePassword)
 
 	// TODO: GET    /auth/methods
 	// TODO: GET    /v1/users/:id/params => currentuser auth.Params

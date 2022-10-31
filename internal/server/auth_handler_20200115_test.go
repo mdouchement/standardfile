@@ -483,10 +483,20 @@ func TestRequestUpdatePassword20200115(t *testing.T) {
 		assert.Equal(t, user.Email, params["new_email"])
 	})
 
+	// If a new email is provided, but already used
+	user2, _ := createUserWithSession(ctrl)
+	params["current_password"] = "yolo!"
+	params["new_email"] = user2.Email
+	r.PUT("/v1/users/"+user.ID+"/attributes/credentials").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusUnauthorized, r.Code, r.Body.String())
+		assert.JSONEq(t, `{"error":{"message":"The email you entered is already taken. Please try again."}}`, r.Body.String())
+	})
+
 	// If the user id parameter is different from the request's bearer token
 	params["current_password"] = "yolo!"
 	params["new_email"] = "test@test.de"
 	r.PUT("/v1/users/DIFFERENT-ID-THAN-IN-BEARER-TOKEN/attributes/credentials").SetHeader(header).SetJSON(params).Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-		assert.Equal(t, http.StatusUnauthorized, r.Code)
+		assert.Equal(t, http.StatusUnauthorized, r.Code, r.Body.String())
+		assert.JSONEq(t, `{"error":{"message":"The given ID is not the user's one."}}`, r.Body.String())
 	})
 }

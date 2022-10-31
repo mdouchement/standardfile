@@ -15,8 +15,10 @@ type (
 		Delete(m model.Model) error
 		// Close the database.
 		Close() error
-		// IsNotFound returns true if err is nil or a not found error.
+		// IsNotFound returns true if err is a not found error.
 		IsNotFound(err error) bool
+		// IsAlreadyExists returns true if err is a not found error.
+		IsAlreadyExists(err error) bool
 
 		UserInteraction
 		SessionInteraction

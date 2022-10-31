@@ -272,15 +272,17 @@ func (h *auth) UpdatePassword(c echo.Context) error {
 
 	user := currentUser(c)
 
-	// When id parameter passed, check it's the same like in bearer token
+	// When id parameter passed, check it's the same like in bearer token.
 	if c.Param("id") != "" && c.Param("id") != user.ID {
-		err := "User id parameter is different from the request's bearer token: " + c.Param("id") + " vs " + user.ID
-		return c.JSON(http.StatusUnauthorized, sferror.New(err))
+		return c.JSON(http.StatusUnauthorized, sferror.New("The given ID is not the user's one."))
 	}
 
 	service := service.NewUser(h.db, h.sessions, params.APIVersion)
 	password, err := service.Password(user, params)
 	if err != nil {
+		if h.db.IsAlreadyExists(err) {
+			return c.JSON(http.StatusUnauthorized, sferror.New("The email you entered is already taken. Please try again."))
+		}
 		return err
 	}
 

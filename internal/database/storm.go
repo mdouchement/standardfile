@@ -84,6 +84,10 @@ func (c *strm) IsNotFound(err error) bool {
 	return errors.Cause(err) == storm.ErrNotFound
 }
 
+func (c *strm) IsAlreadyExists(err error) bool {
+	return errors.Cause(err) == storm.ErrAlreadyExists
+}
+
 func (c *strm) FindUser(id string) (*model.User, error) {
 	var user model.User
 	if err := c.db.One("ID", id, &user); err != nil {
