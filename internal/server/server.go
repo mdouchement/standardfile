@@ -143,6 +143,16 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	v2.POST("/login-params", auth.ParamsPKCE)
 	//v2restricted := restricted.Group("/v2")
 
+	//
+	// subscription handlers
+	//
+	subscription := &subscription{}
+	router.GET("/v2/subscriptions", func(c echo.Context) error {
+		return c.HTML(http.StatusInternalServerError, "getaddrinfo EAI_AGAIN payments")
+	})
+	v1restricted.GET("/users/:id/subscription", subscription.SubscriptionV1)
+	v1restricted.GET("/users/:id/features", subscription.Features)
+
 	return engine
 }
 
