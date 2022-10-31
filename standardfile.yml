@@ -33,4 +33,4 @@ session:
 #
 # This project https://github.com/mdouchement/standardfile does not intend to
 # conflict with the business model of StandardNotes project or seek compensation.
-enable_subscription: true
+enable_subscription: false
