@@ -12,7 +12,7 @@ type subscription struct{}
 func (h *subscription) SubscriptionV1(c echo.Context) error {
 	user := currentUser(c)
 
-	// The official standard notes client has a race condition,
+	// The official Standard Notes client has a race condition,
 	// the features endpoint will only be called when delaying response...
 	time.Sleep(1 * time.Second)
 

@@ -22,3 +22,15 @@ session:
   secret: paseto-development
   access_token_ttl: 1440h # 60 days expressed in Golang's time.Duration format
   refresh_token_ttl: 8760h # 1 year
+# This option enables paid features in the official StandardNotes client.
+# If you want to enables these features, you should consider to
+# donate to the StandardNotes project as they say:
+#
+# Building Standard Notes has high costs. If everyone evaded contributing financially,
+# we would no longer be here to continue to build upon and improve these services for you.
+# Please consider [donating](https://standardnotes.com/donate) if you do not plan on purchasing a subscription.
+# https://docs.standardnotes.com/self-hosting/subscriptions/
+#
+# This project https://github.com/mdouchement/standardfile does not intend to
+# conflict with the business model of StandardNotes project or seek compensation.
+enable_subscription: true
