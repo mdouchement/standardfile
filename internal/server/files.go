@@ -26,16 +26,16 @@ type ValetRequestParams struct {
 
 type ValetToken struct {
 	Authorization string `json:"authorization"`
-	FileId        string `json:"fileId"`
+	FileID        string `json:"fileId"`
 }
 
 func (token *ValetToken) GetFilePath() string {
-	// TODO: Check format of fileId (Security)
+	// TODO: Check format of FileID (Security)
 	// TODO: Allow custom path in config
 	// TODO: Subfolders for each user (Compatible format with official server)
 	// TODO: use filepath.Join function
 	// TODO: Fobbid "../../" pattern, may be with https://pkg.go.dev/io/fs#ValidPath
-	return "/etc/standardfile/database/" + token.FileId
+	return "/etc/standardfile/database/" + token.FileID
 }
 
 // Provides a valet token that is required to execute an operation
@@ -51,7 +51,7 @@ func (h *files) ValetTokens(c echo.Context) error {
 
 	var token ValetToken
 	token.Authorization = c.Request().Header.Get(echo.HeaderAuthorization)
-	token.FileId = params.Resources[0].RemoteIdentifier
+	token.FileID = params.Resources[0].RemoteIdentifier
 	valetTokenJson, err := json.Marshal(token)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err)
@@ -85,7 +85,7 @@ func (h *files) CreateUploadSession(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"success":  true,
-		"uploadId": token.FileId,
+		"uploadId": token.FileID,
 	})
 }
 
