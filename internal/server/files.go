@@ -136,7 +136,9 @@ func (h *files) UploadChunk(c echo.Context) error {
 	// Create new buffer
 	writer := bufio.NewWriter(f)
 	reader := c.Request().Body
-	io.Copy(writer, reader)
+	if _, err := io.Copy(writer, reader); err != nil {
+		return c.JSON(http.StatusBadRequest, err)
+	}
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"success": true,
