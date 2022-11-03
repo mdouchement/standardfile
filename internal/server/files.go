@@ -33,6 +33,8 @@ func (token *ValetToken) GetFilePath() string {
 	// TODO: Check format of fileId (Security)
 	// TODO: Allow custom path in config
 	// TODO: Subfolders for each user (Compatible format with official server)
+	// TODO: use filepath.Join function
+	// TODO: Fobbid "../../" pattern, may be with https://pkg.go.dev/io/fs#ValidPath
 	return "/etc/standardfile/database/" + token.FileId
 }
 
