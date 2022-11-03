@@ -87,7 +87,7 @@ func (h *files) CreateUploadSession(c echo.Context) error {
 	})
 }
 
-// Called when all chunks a file uploaded
+// Called when uploaded all chunks of a file
 func (h *files) CloseUploadSession(c echo.Context) error {
 	valetTokenBase64 := c.Request().Header.Get("x-valet-token")
 	valetTokenBytes, err := base64.StdEncoding.DecodeString(valetTokenBase64)
