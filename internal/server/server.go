@@ -154,12 +154,14 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	//
 	files := &files{}
 	v1restricted.POST("/files/valet-tokens", files.ValetTokens)
+	v1valet := v1.Group("")
+	// TODO: v1valet.Use(a valet middleware for authentication)
 	// Following endpoints are authorized via valet token
-	v1.POST("/files/upload/create-session", files.CreateUploadSession)
-	v1.POST("/files/upload/close-session", files.CloseUploadSession)
-	v1.POST("/files/upload/chunk", files.UploadChunk)
-	v1.DELETE("/files", files.Delete)
-	v1.GET("/files", files.Download)
+	v1valet.POST("/files/upload/create-session", files.CreateUploadSession)
+	v1valet.POST("/files/upload/close-session", files.CloseUploadSession)
+	v1valet.POST("/files/upload/chunk", files.UploadChunk)
+	v1valet.DELETE("/files", files.Delete)
+	v1valet.GET("/files", files.Download)
 
 	//
 	// subscription handlers
