@@ -21,6 +21,7 @@ type Controller struct {
 	NoRegistration     bool
 	ShowRealVersion    bool
 	EnableSubscription bool
+	FilesServerUrl     string
 	// JWT params
 	SigningKey []byte
 	// Session params
@@ -167,7 +168,9 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	// subscription handlers
 	//
 	if ctrl.EnableSubscription {
-		subscription := &subscription{}
+		subscription := &subscription{
+			filesServerUrl: ctrl.FilesServerUrl,
+		}
 		router.GET("/v2/subscriptions", func(c echo.Context) error {
 			return c.HTML(http.StatusInternalServerError, "getaddrinfo EAI_AGAIN payments")
 		})

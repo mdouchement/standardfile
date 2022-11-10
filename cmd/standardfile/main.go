@@ -172,6 +172,7 @@ var (
 				NoRegistration:             konf.Bool("no_registration"),
 				ShowRealVersion:            konf.Bool("show_real_version"),
 				EnableSubscription:         konf.Bool("enable_subscription"),
+				FilesServerUrl:             konf.String("files_server_url"),
 				SigningKey:                 configSecretKey,
 				SessionSecret:              kdf(32, configSessionSecret),
 				AccessTokenExpirationTime:  konf.MustDuration("session.access_token_ttl"),

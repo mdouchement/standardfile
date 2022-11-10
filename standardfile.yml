@@ -7,21 +7,27 @@
 
 # Address to bind
 address: "localhost:5000"
+
 # Disable registration
 no_registration: false
+
 # Show real version in `GET /version'
 show_real_version: false
+
 # Database folder path; empty value means current directory
 database_path: ""
+
 # Secret key used for JWT authentication (before 004 and 20200115)
 # If missing, will be read from $CREDENTIALS_DIRECTORY/secret_key file
 secret_key: jwt-development
+
 # Session used for authentication (since 004 and 20200115)
 session:
   # If missing, will be read from $CREDENTIALS_DIRECTORY/session.secret file
   secret: paseto-development
   access_token_ttl: 1440h # 60 days expressed in Golang's time.Duration format
   refresh_token_ttl: 8760h # 1 year
+
 # This option enables paid features in the official StandardNotes client.
 # If you want to enables these features, you should consider to
 # donate to the StandardNotes project as they say:
@@ -34,3 +40,7 @@ session:
 # This project https://github.com/mdouchement/standardfile does not intend to
 # conflict with the business model of StandardNotes project or seek compensation.
 enable_subscription: false
+
+# Insert a publicly accessible URL to this server and set enable_subscription
+# to 'true' for working file upload/download.
+files_server_url: "http://localhost:5000"
