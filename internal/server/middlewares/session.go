@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/mdouchement/middlewarex"
@@ -22,9 +23,7 @@ const (
 // It also handle JWT tokens from previous API versions.
 // It stores current_user into echo.Context
 func Session(m session.Manager) echo.MiddlewareFunc {
-	jwt := middleware.JWTWithConfig(middleware.JWTConfig{
-		SigningKey: m.JWTSigningKey(),
-	})
+	jwt := echojwt.JWT(m.JWTSigningKey())
 	paseto := middlewarex.PASETOWithConfig(middlewarex.PASETOConfig{
 		SigningKey: m.SessionSecret(),
 		Validators: []paseto.Validator{

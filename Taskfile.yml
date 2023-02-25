@@ -4,7 +4,7 @@
 version: '3'
 
 vars:
-  VERSION: 0.10.0
+  VERSION: 0.10.1
   REVISION: { sh: git rev-parse HEAD }
   WORKDIR: { sh: pwd }
 
