@@ -89,9 +89,7 @@ func (s *syncService20161215) Execute() error {
 	return nil
 }
 
-//
 // Save
-//
 func (s *syncService20161215) save() (saved []*model.Item, unsaved []*UnsavedItem) {
 	saved = make([]*model.Item, 0)
 	unsaved = make([]*UnsavedItem, 0)
@@ -128,9 +126,7 @@ func (s *syncService20161215) save() (saved []*model.Item, unsaved []*UnsavedIte
 	return
 }
 
-//
 // Check conflicts
-//
 func (s *syncService20161215) checkForConflicts() map[string]bool {
 	// Saved is the smallest slice.
 	saved := make(map[string]*model.Item)

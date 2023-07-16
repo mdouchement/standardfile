@@ -76,7 +76,7 @@ func (w *NoteList) RenderSize(size gowid.IRenderSize, focus gowid.Selector, app 
 }
 
 // UserInput implements gowid.IWidget
-func (w *NoteList) UserInput(ev interface{}, size gowid.IRenderSize, focus gowid.Selector, app gowid.IApp) bool {
+func (w *NoteList) UserInput(ev any, size gowid.IRenderSize, focus gowid.Selector, app gowid.IApp) bool {
 	ok := w.presentation.UserInput(ev, size, focus, app)
 
 	if evm, ok := ev.(*tcell.EventMouse); !ok || evm.Buttons() != tcell.ButtonNone {

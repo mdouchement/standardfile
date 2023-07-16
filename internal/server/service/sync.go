@@ -69,9 +69,7 @@ func NewSync(db database.Client, user *model.User, params SyncParams) (s SyncSer
 	return s
 }
 
-//
 // Get
-//
 func (s *syncServiceBase) get() ([]*model.Item, bool, error) {
 	if s.Params.SyncToken == "" {
 		// If it's the first sync request, front-load all exisitng items keys
@@ -107,7 +105,6 @@ func (s *syncServiceBase) get() ([]*model.Item, bool, error) {
 		noDeleted, s.Params.Limit)
 }
 
-//
 // Compute data signature for integrity check
 //
 // https://github.com/standardfile/sfjs/blob/499fd0bc7ebddfc72f8b1dc3c9cbf134e92016d3/lib/app/lib/modelManager.js#L664-L677
@@ -131,9 +128,7 @@ func (s *syncServiceBase) computeDataSignature() (string, error) {
 	return fmt.Sprintf("%x", sha256.Sum256(b)), nil
 }
 
-//
 // PrepareDelete
-//
 func (s *syncServiceBase) prepareDelete(item *model.Item) {
 	item.Content = ""
 	item.EncryptedItemKey = ""

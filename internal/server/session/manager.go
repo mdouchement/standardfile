@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/mdouchement/middlewarex"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/model"
@@ -38,7 +38,7 @@ type (
 		// Regenerate regenerates the session's tokens.
 		Regenerate(session *model.Session) error
 		// UserFromToken the user for the given token.
-		UserFromToken(token interface{}) (*model.User, error)
+		UserFromToken(token any) (*model.User, error)
 	}
 
 	manager struct {
@@ -155,7 +155,7 @@ func (m *manager) Regenerate(session *model.Session) error {
 	return errors.Wrap(m.db.Save(session), "could not save session after refreshing session")
 }
 
-func (m *manager) UserFromToken(token interface{}) (*model.User, error) {
+func (m *manager) UserFromToken(token any) (*model.User, error) {
 	if jwt, ok := token.(*jwt.Token); ok {
 		return m.JWT(jwt)
 	}

@@ -58,7 +58,7 @@ func Backup() error {
 	return errors.Wrap(err, "items")
 }
 
-func backup(v interface{}, filename string) error {
+func backup(v any, filename string) error {
 	payload, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return errors.Wrap(err, "could not serialize value to backup")

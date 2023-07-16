@@ -37,7 +37,7 @@ type (
 		SyncItems(si SyncItems) (SyncItems, error)
 	}
 
-	p      map[string]interface{}
+	p      map[string]any
 	client struct {
 		http       *http.Client
 		apiversion string

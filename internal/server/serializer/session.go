@@ -3,8 +3,8 @@ package serializer
 import "github.com/mdouchement/standardfile/internal/model"
 
 // Session serializes the render of a session.
-func Session(m *model.Session) map[string]interface{} {
-	r := map[string]interface{}{
+func Session(m *model.Session) map[string]any {
+	r := map[string]any{
 		"uuid":        m.ID,
 		"created_at":  m.CreatedAt.UTC(),
 		"updated_at":  m.UpdatedAt.UTC(),
@@ -16,8 +16,8 @@ func Session(m *model.Session) map[string]interface{} {
 }
 
 // Sessions serializes the render of sessions.
-func Sessions(m []*model.Session) []map[string]interface{} {
-	sessions := make([]map[string]interface{}, len(m))
+func Sessions(m []*model.Session) []map[string]any {
+	sessions := make([]map[string]any, len(m))
 	for i, s := range m {
 		sessions[i] = Session(s)
 	}

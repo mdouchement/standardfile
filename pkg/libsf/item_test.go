@@ -202,3 +202,44 @@ func TestItem_SealUnseal4_Note(t *testing.T) {
 		assert.Equal(t, note.Text, item.Note.Text)
 	}
 }
+
+func TestItem_UnsealSeal4_NoteWithAdditionnalData(t *testing.T) {
+	auth := libsf.NewAuth("a@a.lan", libsf.ProtocolVersion4, "66d463427f417c5c8660733ffb1f7a4786d14fe3d7946b5116b5388f9cf80123", 0)
+	keychain := &libsf.KeyChain{
+		Version:   libsf.ProtocolVersion4,
+		MasterKey: auth.SymmetricKeyPair("12345678").MasterKey,
+		ItemsKey: map[string]string{
+			"3393636f-959f-4365-aa4c-4c473d6c84e7": "cfee40a7a0e53eeb0a06d70d46a9c7d69e0c5924fd1b0be7c7d6bedcaa3eeefb",
+		},
+	}
+
+	key := "004:6d0f5ebd7ba9b89a9e90c765599c6c0d7fd6a43e9ff64e0a:aj2EVQ9tm94qczo17hQRHLceTlAHddTMur/7TOSHXOTcDuA/B/bp/dXFMLWdvQpIjK5u7jSTiRlNhT7UuonpMkU1tO5L2qZ4FLBhohWROG8=:eyJ1IjoiMTUwMzViM2QtZDAzZi00Y2E0LWJkZWYtYzU1OTQwNDcwNjFkIiwidiI6IjAwNCJ9:eyJ0ZXN0Ijo0Mn0="
+	content := "004:226c5b03350ca61629f54f97db035e3f978dfa06ee7f6746:srs9J6p3KQxhRkfXSu9yytvyR8CkyfSILXtImHOpN2jS9raDpYBXmT7W64ZIorT7SMgNXm3jWPVwgKweRH9KxUzyf8dNd+ezeWAHwqaHzlLBR/7BZulTRFoGryWNMY+t5Agx+6EzCNLiVsnCxICkjsG2rOf8VgZvQH5v1f/RhKm+ZEYaprW3jDfl5p8TuZUYhkHl1BhCz1ARfvFzIliSIYYAL+5S9qcuS3af0CwlN4C9lBN778Y=:eyJ1IjoiMTUwMzViM2QtZDAzZi00Y2E0LWJkZWYtYzU1OTQwNDcwNjFkIiwidiI6IjAwNCJ9:eyJ0ZXN0Ijo0Mn0="
+	item := &libsf.Item{
+		ID:               "15035b3d-d03f-4ca4-bdef-c5594047061d",
+		UserID:           "d26846e8-7669-43fb-a168-253f8a97778a",
+		ContentType:      libsf.ContentTypeNote,
+		ItemsKeyID:       "3393636f-959f-4365-aa4c-4c473d6c84e7",
+		Deleted:          false,
+		EncryptedItemKey: key,
+		Content:          content,
+		// Internal stuff
+		Version:    libsf.ProtocolVersion4,
+		AuthParams: auth,
+	}
+
+	err := item.Unseal(keychain)
+	if assert.NoError(t, err) {
+		assert.Equal(t, "The Title", item.Note.Title)
+		assert.Equal(t, "The text", item.Note.Text)
+	}
+
+	err = item.Seal(keychain)
+	if assert.NoError(t, err) {
+		assert.NotEqual(t, key, item.EncryptedItemKey)
+		assert.True(t, strings.HasSuffix(item.EncryptedItemKey, ":eyJ0ZXN0Ijo0Mn0="), item.EncryptedItemKey)
+
+		assert.NotEqual(t, content, item.Content)
+		assert.True(t, strings.HasSuffix(item.Content, ":eyJ0ZXN0Ijo0Mn0="), item.Content)
+	}
+}

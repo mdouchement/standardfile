@@ -14,7 +14,7 @@ import (
 )
 
 // nolint:deadcode,unused
-func debug(v interface{}, verbose ...bool) {
+func debug(v any, verbose ...bool) {
 	if len(verbose) > 0 && verbose[0] {
 		NewLogger().Println(litter.Sdump(v))
 		return

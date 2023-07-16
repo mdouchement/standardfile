@@ -71,7 +71,7 @@ func main() {
 }
 
 func count(sc *stormsql.SelectClause, query storm.Query) error {
-	var records interface{}
+	var records any
 	switch sc.Tablename {
 	case "users":
 		records = &model.User{}
@@ -93,7 +93,7 @@ func count(sc *stormsql.SelectClause, query storm.Query) error {
 }
 
 func list(sc *stormsql.SelectClause, query storm.Query) error {
-	var records interface{}
+	var records any
 	switch sc.Tablename {
 	case "users":
 		records = &[]*model.User{}
@@ -118,7 +118,7 @@ func list(sc *stormsql.SelectClause, query storm.Query) error {
 	return nil
 }
 
-func jsondump(v interface{}) {
+func jsondump(v any) {
 	d, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		panic(err)

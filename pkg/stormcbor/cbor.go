@@ -15,7 +15,7 @@ var Codec = new(cborCodec)
 
 type cborCodec int
 
-func (c cborCodec) Marshal(v interface{}) ([]byte, error) {
+func (c cborCodec) Marshal(v any) ([]byte, error) {
 	var b bytes.Buffer
 	enc := codec.NewEncoder(&b, &codec.CborHandle{})
 	err := enc.Encode(v)
@@ -25,7 +25,7 @@ func (c cborCodec) Marshal(v interface{}) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (c cborCodec) Unmarshal(b []byte, v interface{}) error {
+func (c cborCodec) Unmarshal(b []byte, v any) error {
 	r := bytes.NewReader(b)
 	dec := codec.NewDecoder(r, &codec.CborHandle{})
 	return dec.Decode(v)

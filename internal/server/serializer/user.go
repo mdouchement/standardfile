@@ -6,8 +6,8 @@ import (
 )
 
 // User serializes the render of a user.
-func User(m *model.User) map[string]interface{} {
-	r := map[string]interface{}{
+func User(m *model.User) map[string]any {
+	r := map[string]any{
 		"uuid":       m.ID,
 		"created_at": m.CreatedAt.UTC(),
 		"updated_at": m.UpdatedAt.UTC(),

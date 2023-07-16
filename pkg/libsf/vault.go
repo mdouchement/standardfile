@@ -7,7 +7,7 @@ import (
 )
 
 type vault interface {
-	setup(i *Item)
+	setup(i *Item, old vault)
 	seal(keychain *KeyChain, payload []byte) error
 	serialize() (string, error)
 	unseal(keychain *KeyChain) ([]byte, error)

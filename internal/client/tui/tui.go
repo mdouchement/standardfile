@@ -119,7 +119,7 @@ func layout(ui *TUI) gowid.AppArgs {
 //                //
 ////////////////////
 
-func (ui *TUI) unhandled(app gowid.IApp, ev interface{}) bool {
+func (ui *TUI) unhandled(app gowid.IApp, ev any) bool {
 	evk, ok := ev.(*tcell.EventKey)
 	if !ok {
 		return false

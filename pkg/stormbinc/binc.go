@@ -14,7 +14,7 @@ var Codec = new(bincCodec)
 
 type bincCodec int
 
-func (c bincCodec) Marshal(v interface{}) ([]byte, error) {
+func (c bincCodec) Marshal(v any) ([]byte, error) {
 	var b bytes.Buffer
 	enc := codec.NewEncoder(&b, &codec.BincHandle{})
 	err := enc.Encode(v)
@@ -24,7 +24,7 @@ func (c bincCodec) Marshal(v interface{}) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (c bincCodec) Unmarshal(b []byte, v interface{}) error {
+func (c bincCodec) Unmarshal(b []byte, v any) error {
 	r := bytes.NewReader(b)
 	dec := codec.NewDecoder(r, &codec.BincHandle{})
 	return dec.Decode(v)
