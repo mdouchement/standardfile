@@ -2,14 +2,12 @@
 // libsf is client that interacts with StandardFile/StandardNotes API for syncing encrypted notes.
 //
 
-//
 // Create client
 //
 //	client, err := libsf.NewDefaultClient("https://notes.nas.lan")
 //	if err != nil {
 //		log.Fatal(err)
 //	}
-//
 //
 // Authenticate
 //
@@ -33,7 +31,6 @@
 //	if err != nil {
 //		log.Fatal(err)
 //	}
-//
 //
 // Get all items
 //
@@ -90,7 +87,6 @@
 //		}
 //	}
 //
-//
 // Update an item
 //
 //	item := items.Retrieved[last]
@@ -117,5 +113,4 @@
 //		log.Fatal("items conflict")
 //	}
 //	fmt.Println("Updated!")
-//
 package libsf

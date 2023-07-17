@@ -14,7 +14,7 @@ import (
 
 type (
 	// A Render is an arbitrary payload serializable in JSON by the API.
-	Render interface{}
+	Render any
 
 	// A UserService is a service used for handle API versioning of the user.
 	UserService interface {

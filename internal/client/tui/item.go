@@ -75,7 +75,7 @@ func (w *Item) RenderSize(size gowid.IRenderSize, focus gowid.Selector, app gowi
 }
 
 // UserInput implements gowid.IWidget
-func (w *Item) UserInput(ev interface{}, size gowid.IRenderSize, focus gowid.Selector, app gowid.IApp) bool {
+func (w *Item) UserInput(ev any, size gowid.IRenderSize, focus gowid.Selector, app gowid.IApp) bool {
 	return w.presentation.UserInput(ev, size, focus, app)
 }
 
@@ -142,7 +142,7 @@ func (w *ItemEditor) clickDownArrow(app gowid.IApp, iw gowid.IWidget) {
 }
 
 // UserInput implements gowid.IWidget
-func (w *ItemEditor) UserInput(ev interface{}, size gowid.IRenderSize, focus gowid.Selector, app gowid.IApp) bool {
+func (w *ItemEditor) UserInput(ev any, size gowid.IRenderSize, focus gowid.Selector, app gowid.IApp) bool {
 	box, _ := size.(gowid.IRenderBox)
 	w.sb.Top, w.sb.Middle, w.sb.Bottom = w.e.CalculateTopMiddleBottom(gowid.MakeRenderBox(box.BoxColumns()-1, box.BoxRows()))
 

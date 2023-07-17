@@ -14,11 +14,12 @@ import (
 
 type (
 	vault4 struct {
-		version    string
-		nonce      string
-		ciphertext string
-		rawauth    string
-		auth       authenticatedData
+		version        string
+		nonce          string
+		ciphertext     string
+		rawauth        string
+		auth           authenticatedData
+		additionaldata string
 	}
 
 	authenticatedData struct {
@@ -36,14 +37,20 @@ type (
 func parse4(components []string) (vault, error) {
 	v := &vault4{}
 
-	if len(components) != 4 {
+	if len(components) < 4 || len(components) > 5 {
 		return v, errors.New("invalid secret format")
 	}
 
+	// https://github.com/standardnotes/app/blob/main/packages/snjs/specification.md#encryption---specifics
 	v.version = components[0]
 	v.nonce = components[1]
 	v.ciphertext = components[2]
 	v.rawauth = components[3]
+	if len(components) > 4 {
+		// This part is not defined in the specification but implemented in StandardNotes official implementation.
+		// https://github.com/standardnotes/app/commit/b032eb9c9b4b98a1a256d3d03863866bb4136ec8#diff-cb607afd3ffe76488f6ba1f7885d16f853810e799c9f223a1dd7673d15928396
+		v.additionaldata = components[4] // Default value is `e30=' (aka `{}' in base64).
+	}
 
 	auth, err := base64.StdEncoding.DecodeString(v.rawauth)
 	if err != nil {
@@ -138,9 +145,14 @@ func (v *vault4) unseal(keychain *KeyChain) ([]byte, error) {
 ///
 //
 
-func (v *vault4) setup(i *Item) {
+func (v *vault4) setup(i *Item, old vault) {
 	v.auth.KeyParams = *i.AuthParams.(*auth)
 	v.auth.from = i.ContentType
+
+	if vault, ok := old.(*vault4); ok {
+		// Forward additional data from vault used to unseal to the new one created for sealing.
+		v.additionaldata = vault.additionaldata
+	}
 }
 
 func (v *vault4) configure(i *Item) {
@@ -153,7 +165,11 @@ func (v *vault4) configure(i *Item) {
 //
 
 func (v *vault4) serialize() (string, error) {
-	return fmt.Sprintf("%s:%s:%s:%s", v.version, v.nonce, v.ciphertext, v.rawauth), nil
+	payload := fmt.Sprintf("%s:%s:%s:%s", v.version, v.nonce, v.ciphertext, v.rawauth)
+	if v.additionaldata != "" {
+		payload = fmt.Sprintf("%s:%s", payload, v.additionaldata)
+	}
+	return payload, nil
 }
 
 ////

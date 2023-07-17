@@ -93,9 +93,7 @@ func (s *syncService20190520) Execute() error {
 	return nil
 }
 
-//
 // Save
-//
 func (s *syncService20190520) save() (saved []*model.Item, conflicts []*ConflictItem, tobedeleted map[string]bool) {
 	saved = make([]*model.Item, 0)
 	conflicts = make([]*ConflictItem, 0)

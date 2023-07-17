@@ -160,7 +160,7 @@ func (v *vault3) unseal(keychain *KeyChain) ([]byte, error) {
 ///
 //
 
-func (v *vault3) setup(i *Item) {
+func (v *vault3) setup(i *Item, _ vault) {
 	v.params = i.AuthParams
 }
 

@@ -104,7 +104,7 @@ func (c *controller) update() error {
 	}
 	fmt.Println(readme)
 
-	body, err := json.Marshal(map[string]interface{}{
+	body, err := json.Marshal(map[string]any{
 		"body": readme,
 	})
 
@@ -219,7 +219,7 @@ func (c *controller) request(method, url string, body io.Reader) (*http.Request,
 	return req, nil
 }
 
-func (c *controller) perform(req *http.Request, v interface{}) error {
+func (c *controller) perform(req *http.Request, v any) error {
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("do: %w", err)

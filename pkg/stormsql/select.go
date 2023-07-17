@@ -94,14 +94,14 @@ func parsWhereExpr(expr sqlparser.Expr) q.Matcher {
 	//
 	case *sqlparser.ComparisonExpr:
 		field := v.Left.(*sqlparser.ColName).Name.String()
-		var value interface{}
+		var value any
 
 		// Parse value
 		switch sqlvalue := v.Right.(type) {
 		case sqlparser.BoolVal:
 			value = sqlvalue
 		case sqlparser.ValTuple:
-			var tuple []interface{}
+			var tuple []any
 			for _, t := range sqlvalue {
 				tuple = append(tuple, parseSQLVal(t.(*sqlparser.SQLVal)))
 			}
@@ -171,7 +171,7 @@ func parsWhereExpr(expr sqlparser.Expr) q.Matcher {
 	}
 }
 
-func parseSQLVal(v *sqlparser.SQLVal) (value interface{}) {
+func parseSQLVal(v *sqlparser.SQLVal) (value any) {
 	switch v.Type {
 	case sqlparser.StrVal:
 		value = string(v.Val)

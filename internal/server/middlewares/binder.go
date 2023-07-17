@@ -23,7 +23,7 @@ func NewBinder() echo.Binder {
 }
 
 // Bind implements the echo.Bind interface.
-func (b *binder) Bind(i interface{}, c echo.Context) (err error) {
+func (b *binder) Bind(i any, c echo.Context) (err error) {
 	if c.Request().ContentLength == 0 && b.methodsWithBody[c.Request().Method] {
 		return echo.NewHTTPError(http.StatusBadRequest, "Request body can't be empty")
 	}

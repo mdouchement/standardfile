@@ -105,11 +105,12 @@ func (i *Item) Seal(keychain *KeyChain) error {
 		return errors.Wrap(err, "could not generate encryption key")
 	}
 
+	old := i.key
 	i.key, err = create(i.Version, i.ID)
 	if err != nil {
 		return errors.Wrap(err, "could not create vault")
 	}
-	i.key.setup(i)
+	i.key.setup(i, old)
 
 	err = i.key.seal(keyKeyChain(keychain, i), []byte(ik))
 	if err != nil {
@@ -130,11 +131,12 @@ func (i *Item) Seal(keychain *KeyChain) error {
 		return errors.Wrap(err, "could not serialize note")
 	}
 
+	old = i.content
 	i.content, err = create(i.Version, i.ID)
 	if err != nil {
 		return errors.Wrap(err, "could not create content vault")
 	}
-	i.content.setup(i)
+	i.content.setup(i, old)
 
 	err = i.content.seal(contentKeyChain(i.Version, ik), note)
 	if err != nil {
