@@ -7,7 +7,9 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type subscription struct{}
+type subscription struct {
+	filesServerUrl string
+}
 
 func (h *subscription) SubscriptionV1(c echo.Context) error {
 	user := currentUser(c)
@@ -30,6 +32,9 @@ func (h *subscription) SubscriptionV1(c echo.Context) error {
 						"name": "CORE_USER",
 					},
 				},
+			},
+			"server": echo.Map{
+				"filesServerUrl": h.filesServerUrl,
 			},
 		},
 		"data": echo.Map{
@@ -69,6 +74,9 @@ func (h *subscription) Features(c echo.Context) error {
 						"name": "CORE_USER",
 					},
 				},
+			},
+			"server": echo.Map{
+				"filesServerUrl": h.filesServerUrl,
 			},
 		},
 		"data": echo.Map{

@@ -21,6 +21,7 @@ type Controller struct {
 	NoRegistration     bool
 	ShowRealVersion    bool
 	EnableSubscription bool
+	FilesServerUrl     string
 	// JWT params
 	SigningKey []byte
 	// Session params
@@ -35,7 +36,12 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	engine.Use(middleware.Recover())
 	// engine.Use(middleware.CSRF()) // not supported by StandardNotes
 	engine.Use(middleware.Secure())
-	engine.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
+
+	// Expose headers for file download
+	cors := middleware.DefaultCORSConfig
+	cors.ExposeHeaders = append(cors.ExposeHeaders, "Content-Range", "Accept-Ranges")
+	engine.Use(middleware.CORSWithConfig(cors))
+
 	engine.Use(middleware.Gzip())
 
 	engine.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -68,6 +74,7 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	v1 := router.Group("/v1")
 	v1restricted := restricted.Group("/v1")
 
+	//
 	// generic handlers
 	//
 	router.GET("/version", func(c echo.Context) error {
@@ -142,13 +149,28 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	v2 := router.Group("/v2")
 	v2.POST("/login", auth.LoginPKCE)
 	v2.POST("/login-params", auth.ParamsPKCE)
-	//v2restricted := restricted.Group("/v2")
+
+	//
+	// files
+	//
+	files := &files{}
+	v1restricted.POST("/files/valet-tokens", files.ValetTokens)
+	v1valet := v1.Group("")
+	// TODO: v1valet.Use(a valet middleware for authentication)
+	// Following endpoints are authorized via valet token
+	v1valet.POST("/files/upload/create-session", files.CreateUploadSession)
+	v1valet.POST("/files/upload/close-session", files.CloseUploadSession)
+	v1valet.POST("/files/upload/chunk", files.UploadChunk)
+	v1valet.DELETE("/files", files.Delete)
+	v1valet.GET("/files", files.Download)
 
 	//
 	// subscription handlers
 	//
 	if ctrl.EnableSubscription {
-		subscription := &subscription{}
+		subscription := &subscription{
+			filesServerUrl: ctrl.FilesServerUrl,
+		}
 		router.GET("/v2/subscriptions", func(c echo.Context) error {
 			return c.HTML(http.StatusInternalServerError, "getaddrinfo EAI_AGAIN payments")
 		})
