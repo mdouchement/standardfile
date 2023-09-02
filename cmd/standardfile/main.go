@@ -12,9 +12,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/server"
 	"github.com/pkg/errors"
@@ -166,12 +166,26 @@ var (
 			}
 			defer db.Close()
 
+			var subscription, features []byte
+			if konf.String("subscription_file") != "" {
+				subscription, err = os.ReadFile(konf.String("subscription_file"))
+				if err != nil {
+					return errors.Wrap(err, "could not read subscription_file")
+				}
+
+				features, err = os.ReadFile(konf.String("features_file"))
+				if err != nil {
+					return errors.Wrap(err, "could not read features_file")
+				}
+			}
+
 			engine := server.EchoEngine(server.Controller{
 				Version:                    version,
 				Database:                   db,
 				NoRegistration:             konf.Bool("no_registration"),
 				ShowRealVersion:            konf.Bool("show_real_version"),
-				EnableSubscription:         konf.Bool("enable_subscription"),
+				SubscriptionPayload:        subscription,
+				FeaturesPayload:            features,
 				SigningKey:                 configSecretKey,
 				SessionSecret:              kdf(32, configSessionSecret),
 				AccessTokenExpirationTime:  konf.MustDuration("session.access_token_ttl"),

@@ -1,5 +1,11 @@
 # Yet Another Standardfile Implementation in Go
 
+This project is **maintained for the basic features** as encrypted notes because on its own it already takes hours to figure out what is the issue when a breaking change or bug happens (e.g. [#87](https://github.com/mdouchement/standardfile/issues/87)).
+
+People's pull requests that implement or fix extra features (revision, file storage, etc.) will be gladly reviewed and merged.
+
+<hr>
+
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/mdouchement/standardfile)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mdouchement/standardfile)](https://goreportcard.com/report/github.com/mdouchement/standardfile)
 [![License](https://img.shields.io/github/license/mdouchement/standardfile.svg)](http://opensource.org/licenses/MIT)

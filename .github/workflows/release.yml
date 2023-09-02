@@ -29,7 +29,7 @@ jobs:
         cp task /usr/local/bin/
     #
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     #
     - name: Build binaries
       run: task build-all

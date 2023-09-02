@@ -16,11 +16,12 @@ import (
 
 // A Controller is an Iversion Of Control pattern used to init the server package.
 type Controller struct {
-	Version            string
-	Database           database.Client
-	NoRegistration     bool
-	ShowRealVersion    bool
-	EnableSubscription bool
+	Version             string
+	Database            database.Client
+	NoRegistration      bool
+	ShowRealVersion     bool
+	SubscriptionPayload []byte
+	FeaturesPayload     []byte
 	// JWT params
 	SigningKey []byte
 	// Session params
@@ -147,8 +148,11 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	//
 	// subscription handlers
 	//
-	if ctrl.EnableSubscription {
-		subscription := &subscription{}
+	if len(ctrl.SubscriptionPayload) != 0 {
+		subscription := &subscription{
+			SubscriptionPayload: ctrl.SubscriptionPayload,
+			FeaturesPayload:     ctrl.FeaturesPayload,
+		}
 		router.GET("/v2/subscriptions", func(c echo.Context) error {
 			return c.HTML(http.StatusInternalServerError, "getaddrinfo EAI_AGAIN payments")
 		})

@@ -12,7 +12,6 @@ import (
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/internal/sferror"
-	"github.com/mdouchement/standardfile/pkg/libsf"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -242,9 +241,9 @@ func TestRequestSessionRegenerate(t *testing.T) {
 		assert.NotEmpty(t, refresh.Session.RefreshToken)
 		assert.NotEqual(t, ses.RefreshToken, refresh.Session.RefreshToken)
 
-		assert.Greater(t, refresh.Session.RefreshExpiration, libsf.UnixMillisecond(ses.ExpireAt))
+		assert.Greater(t, refresh.Session.RefreshExpiration, ses.ExpireAt.UnixMilli())
 		assert.InEpsilon(t, ses.CreatedAt.UnixNano(), ses.ExpireAt.Add(-ctrl.RefreshTokenExpirationTime).UnixNano(), 1000)
-		assert.Greater(t, refresh.Session.AccessExpiration, libsf.UnixMillisecond(sessions.AccessTokenExprireAt(ses)))
+		assert.Greater(t, refresh.Session.AccessExpiration, sessions.AccessTokenExprireAt(ses).UnixMilli())
 		assert.InEpsilon(t, ses.CreatedAt.UnixNano(), sessions.AccessTokenExprireAt(ses).Add(-ctrl.AccessTokenExpirationTime).UnixNano(), 1000)
 	})
 
