@@ -49,8 +49,8 @@ func (s *Session) UnmarshalJSON(data []byte) error {
 
 	s.AccessToken = session.AccessToken
 	s.RefreshToken = session.RefreshToken
-	s.AccessExpiration = FromUnixMillisecond(session.AccessExpiration)
-	s.RefreshExpiration = FromUnixMillisecond(session.RefreshExpiration)
+	s.AccessExpiration = time.UnixMilli(session.AccessExpiration)
+	s.RefreshExpiration = time.UnixMilli(session.RefreshExpiration)
 	return nil
 }
 
@@ -63,8 +63,8 @@ func (s Session) MarshalJSON() ([]byte, error) {
 	}{
 		AccessToken:       s.AccessToken,
 		RefreshToken:      s.RefreshToken,
-		AccessExpiration:  UnixMillisecond(s.AccessExpiration),
-		RefreshExpiration: UnixMillisecond(s.RefreshExpiration),
+		AccessExpiration:  s.AccessExpiration.UnixMilli(),
+		RefreshExpiration: s.RefreshExpiration.UnixMilli(),
 	}
 
 	return json.Marshal(session)

@@ -22,7 +22,11 @@ session:
   secret: paseto-development
   access_token_ttl: 1440h # 60 days expressed in Golang's time.Duration format
   refresh_token_ttl: 8760h # 1 year
+
 # This option enables paid features in the official StandardNotes client.
+# This option is enabled by providing the JSON's filename containg
+# the official JSON data returned by `GET /v1/users/:id/subscription'.
+#
 # If you want to enables these features, you should consider to
 # donate to the StandardNotes project as they say:
 #
@@ -33,4 +37,8 @@ session:
 #
 # This project https://github.com/mdouchement/standardfile does not intend to
 # conflict with the business model of StandardNotes project or seek compensation.
-enable_subscription: false
+# subscription_file: subscription.json
+
+# The file must match the match the roles defined in the subscription_file.
+# It must contains the official JSON data returned by `GET /v1/users/:id/features'.
+# features_file: features.json

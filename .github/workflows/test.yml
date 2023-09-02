@@ -18,6 +18,6 @@ jobs:
     - name: Tooling
       run: go install gotest.tools/gotestsum@latest
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Test
       run: gotestsum

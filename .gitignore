@@ -6,5 +6,7 @@ sfc.log
 auth_params.json
 items_*.json
 notes_*.json
+subscription.json
+features.json
 dist/
 TODO.md

@@ -71,8 +71,8 @@ func (s *userService20200115) SuccessfulAuthentication(u *model.User, params Par
 	response["session"] = echo.Map{
 		"access_token":       access,
 		"refresh_token":      refresh,
-		"access_expiration":  libsf.UnixMillisecond(s.sessions.AccessTokenExprireAt(session).UTC()),
-		"refresh_expiration": libsf.UnixMillisecond(session.ExpireAt.UTC()),
+		"access_expiration":  s.sessions.AccessTokenExprireAt(session).UTC().UnixMilli(),
+		"refresh_expiration": session.ExpireAt.UTC().UnixMilli(),
 	}
 	return response, nil
 }
