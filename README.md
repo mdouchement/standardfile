@@ -4,6 +4,9 @@ This project is **maintained for the basic features** as encrypted notes because
 
 People's pull requests that implement or fix extra features (revision, file storage, etc.) will be gladly reviewed and merged.
 
+- For any bug linked to the code or its faulty behavior, please take a look to the existing [Issues](https://github.com/mdouchement/standardfile/issues) and feel free to open a new one if nothing match your issue
+- For any question about this project, the configuration, integrations, related projects and so one, please take a look to the existing [Discussions](https://github.com/mdouchement/standardfile/discussions) and feel free to open a new one
+
 <hr>
 
 [![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/mdouchement/standardfile)
