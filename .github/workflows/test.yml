@@ -11,13 +11,13 @@ jobs:
     steps:
     #
     - name: Install Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
         check-latest: true
     - name: Tooling
       run: go install gotest.tools/gotestsum@latest
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Test
       run: gotestsum
