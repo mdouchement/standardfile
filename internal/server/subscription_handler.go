@@ -29,7 +29,7 @@ func (h *subscription) SubscriptionV1(c echo.Context) error {
 	v.Get("data", "user").Set("uuid", new(fastjson.Arena).NewString(user.ID))
 	v.Get("data", "user").Set("email", new(fastjson.Arena).NewString(user.Email))
 
-	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	return c.String(http.StatusOK, v.String())
 }
 
@@ -44,6 +44,6 @@ func (h *subscription) Features(c echo.Context) error {
 	v.Get("meta", "auth").Set("userUuid", new(fastjson.Arena).NewString(user.ID))
 	v.Get("data").Set("userUuid", new(fastjson.Arena).NewString(user.ID))
 
-	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	return c.String(http.StatusOK, v.String())
 }
