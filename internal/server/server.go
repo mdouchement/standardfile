@@ -22,6 +22,8 @@ type Controller struct {
 	ShowRealVersion     bool
 	SubscriptionPayload []byte
 	FeaturesPayload     []byte
+	AllowOrigins        []string
+	AllowMethods        []string
 	// JWT params
 	SigningKey []byte
 	// Session params
@@ -36,7 +38,11 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	engine.Use(middleware.Recover())
 	// engine.Use(middleware.CSRF()) // not supported by StandardNotes
 	engine.Use(middleware.Secure())
-	engine.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
+	engine.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowCredentials: true,
+		AllowOrigins:     ctrl.AllowOrigins,
+		AllowMethods:     ctrl.AllowMethods,
+	}))
 	engine.Use(middleware.Gzip())
 
 	engine.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -143,7 +149,7 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	v2 := router.Group("/v2")
 	v2.POST("/login", auth.LoginPKCE)
 	v2.POST("/login-params", auth.ParamsPKCE)
-	//v2restricted := restricted.Group("/v2")
+	// v2restricted := restricted.Group("/v2")
 
 	//
 	// subscription handlers

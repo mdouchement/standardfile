@@ -186,6 +186,8 @@ var (
 				ShowRealVersion:            konf.Bool("show_real_version"),
 				SubscriptionPayload:        subscription,
 				FeaturesPayload:            features,
+				AllowOrigins:               konf.MustStrings("cors.allow_origins"),
+				AllowMethods:               konf.MustStrings("cors.allow_methods"),
 				SigningKey:                 configSecretKey,
 				SessionSecret:              kdf(32, configSessionSecret),
 				AccessTokenExpirationTime:  konf.MustDuration("session.access_token_ttl"),
