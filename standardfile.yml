@@ -7,6 +7,11 @@
 
 # Address to bind
 address: "localhost:5000"
+cors:
+  # allow_origins of your self-hosted standardnotes/web:latest
+  allow_origins:
+    - http://localhost:3000 # Dev web app
+  allow_methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]
 # Disable registration
 no_registration: false
 # Show real version in `GET /version'
