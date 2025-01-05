@@ -6,7 +6,6 @@ import (
 
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/mdouchement/middlewarex"
 	"github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/o1egl/paseto/v2"
@@ -99,7 +98,7 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 			}
 
 			//
-			// JWT
+			// JWT (deprecated auth)
 			//
 
 			err = jwt(fake)(c) // Check JWT validity according its claims.
@@ -112,7 +111,7 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 				})
 			}
 
-			user, err := m.UserFromToken(c.Get(middleware.DefaultJWTConfig.ContextKey))
+			user, err := m.UserFromToken(c.Get("user")) // https://github.com/labstack/echo-jwt/blob/v4.3.0/jwt.go#L178
 			if err != nil {
 				return err
 			}
