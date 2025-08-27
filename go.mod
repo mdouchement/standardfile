@@ -14,7 +14,6 @@ require (
 	github.com/gcla/gowid v1.4.0
 	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/gofrs/uuid v4.4.0+incompatible
-	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/knadh/koanf/parsers/yaml v1.1.0
 	github.com/knadh/koanf/providers/file v1.2.0
