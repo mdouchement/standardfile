@@ -158,7 +158,7 @@ func (w *ItemEditor) UserInput(ev any, size gowid.IRenderSize, focus gowid.Selec
 
 	handled := w.Widget.UserInput(ev, size, focus, app)
 	if handled {
-		w.Widget.SetFocus(app, 0)
+		w.SetFocus(app, 0)
 	}
 
 	return handled

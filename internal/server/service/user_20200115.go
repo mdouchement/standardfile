@@ -6,7 +6,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server/serializer"
-	"github.com/mdouchement/standardfile/internal/server/session"
 	sessionpkg "github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/internal/sferror"
 	"github.com/mdouchement/standardfile/pkg/libsf"
@@ -41,7 +40,7 @@ func (s *userService20200115) Password(user *model.User, params UpdatePasswordPa
 }
 
 func (s *userService20200115) SuccessfulAuthentication(u *model.User, params Params, response M) (Render, error) {
-	if !session.UserSupportsSessions(u) {
+	if !sessionpkg.UserSupportsSessions(u) {
 		return s.userService20161215.SuccessfulAuthentication(u, params, response)
 	}
 
