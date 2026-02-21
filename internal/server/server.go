@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"sort"
 	"time"
@@ -45,8 +46,20 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 	}))
 	engine.Use(middleware.Gzip())
 
-	engine.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "[${status}] ${method} ${uri} (${bytes_in}) ${latency_human}\n",
+	engine.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogStatus:        true,
+		LogMethod:        true,
+		LogURI:           true,
+		LogLatency:       true,
+		LogContentLength: true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			if v.ContentLength != "" {
+				log.Printf("[%d] %s %s (%s) %s", v.Status, v.Method, v.URI, v.ContentLength, v.Latency)
+				return nil
+			}
+			log.Printf("[%d] %s %s %s", v.Status, v.Method, v.URI, v.Latency)
+			return nil
+		},
 	}))
 	engine.Binder = middlewares.NewBinder()
 	// Error handler
