@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/server/service"
 	"github.com/mdouchement/standardfile/internal/sferror"
@@ -20,7 +20,7 @@ type item struct {
 
 // Sync used for saves local changes as well as retrieves remote changes.
 // https://standardfile.org/#post-items-sync
-func (h *item) Sync(c echo.Context) error {
+func (h *item) Sync(c *echo.Context) error {
 	// Filter params
 	var params service.SyncParams
 	if err := c.Bind(&params); err != nil {
@@ -43,7 +43,7 @@ func (h *item) Sync(c echo.Context) error {
 
 // Backup used for writes all user data to backup extension.
 // This is called when a new extension is registered.
-func (h *item) Backup(c echo.Context) error {
+func (h *item) Backup(c *echo.Context) error {
 	// In reference implementation, there is post_to_extension but not implemented here.
 	// See README.md
 	return c.NoContent(http.StatusOK)
@@ -54,7 +54,7 @@ func (h *item) Backup(c echo.Context) error {
 //
 
 // Delete used for remove all defined items.
-func (h *item) Delete(c echo.Context) error {
+func (h *item) Delete(c *echo.Context) error {
 	// user := currentUser(c)
 	// https://github.com/standardfile/ruby-server/blob/master/app/controllers/api/items_controller.rb#L72-L76
 

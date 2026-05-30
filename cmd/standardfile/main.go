@@ -1,20 +1,26 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"hash"
 	"io"
 	"io/fs"
 	"log"
 	"net"
+	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
+	"github.com/labstack/echo/v5"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/server"
 	"github.com/pkg/errors"
@@ -195,34 +201,59 @@ var (
 			})
 			server.PrintRoutes(engine)
 
-			address := konf.String("address")
-			message := "could not run server"
-			log.Printf("Server listening on %s\n", address)
-			parts := strings.Split(address, ":")
-			if len(parts) == 2 && parts[0] == "unix" {
-				socketFile := parts[1]
-				if _, err := os.Stat(socketFile); err == nil {
-					log.Printf("Removing existing %s\n", socketFile)
-					os.Remove(socketFile)
-				}
-				defer os.Remove(socketFile)
+			address, err := parseAddress(konf.String("address"))
+			if err != nil {
+				return errors.Wrap(err, "invalid listening address")
+			}
 
-				listener, err := net.Listen(parts[0], socketFile)
+			sc := echo.StartConfig{
+				Address:         address.Host, // default to TCP used by HTTP
+				GracefulTimeout: 10 * time.Second,
+			}
+
+			if address.Scheme == "unix" {
+				socket := address.Path
+				if _, err := os.Stat(socket); err == nil {
+					log.Printf("Removing existing %s\n", socket)
+					os.Remove(socket)
+				}
+				defer os.Remove(socket)
+
+				listener, err := net.Listen("unix", socket)
 				if err != nil {
 					return err
 				}
 
 				if socketMode := konf.Int("socket_mode"); socketMode != 0 {
 					mode := fs.FileMode(socketMode)
-					if err := os.Chmod(socketFile, mode); err != nil {
-						return errors.Wrap(err, fmt.Sprintf("chmod %s %#o", socketFile, mode))
+					if err := os.Chmod(socket, mode); err != nil {
+						return errors.Wrap(err, fmt.Sprintf("chmod %s %#o", socket, mode))
 					}
 				}
 
-				return errors.Wrap(engine.Server.Serve(listener), message)
+				sc.Address = socket
+				sc.Listener = listener
 			}
 
-			return errors.Wrap(engine.Start(address), message)
+			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+			defer cancel()
+
+			log.Printf("Server listening on %s\n", sc.Address)
+			return errors.Wrap(sc.Start(ctx, engine), "could not run server")
 		},
 	}
 )
+
+func parseAddress(addr string) (*url.URL, error) {
+	// Case of `:5000' listen address is provided
+	if regexp.MustCompile(`^:\d+$`).MatchString(addr) {
+		addr = fmt.Sprintf("tcp://0.0.0.0%s", addr)
+	}
+
+	// Case of `localhost:5000' listen address is provided
+	if !strings.Contains(addr, "://") {
+		addr = fmt.Sprintf("tcp://%s", addr)
+	}
+
+	return url.Parse(addr)
+}

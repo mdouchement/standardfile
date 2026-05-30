@@ -4,23 +4,23 @@ import (
 	"net/http"
 	"strings"
 
-	echojwt "github.com/labstack/echo-jwt/v4"
-	"github.com/labstack/echo/v4"
+	echojwt "github.com/labstack/echo-jwt/v5"
+	"github.com/labstack/echo/v5"
 	"github.com/mdouchement/middlewarex"
 	"github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/o1egl/paseto/v2"
 )
 
 const (
-	// CurrentUserContextKey is the key to retrieve the current_user from echo.Context.
+	// CurrentUserContextKey is the key to retrieve the current_user from *echo.Context.
 	CurrentUserContextKey = "current_user"
-	// CurrentSessionContextKey is the key to retrieve the current_session from echo.Context.
+	// CurrentSessionContextKey is the key to retrieve the current_session from *echo.Context.
 	CurrentSessionContextKey = "current_session"
 )
 
 // Session returns a Session auth middleware.
 // It also handle JWT tokens from previous API versions.
-// It stores current_user into echo.Context
+// It stores current_user into *echo.Context
 func Session(m session.Manager) echo.MiddlewareFunc {
 	jwt := echojwt.JWT(m.JWTSigningKey())
 	paseto := middlewarex.PASETOWithConfig(middlewarex.PASETOConfig{
@@ -31,18 +31,18 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 		},
 	})
 
-	fake := func(echo.Context) error {
+	fake := func(*echo.Context) error {
 		return nil
 	}
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) (err error) {
+		return func(c *echo.Context) (err error) {
 			authorization := c.Request().Header.Get(echo.HeaderAuthorization)
 			token := token(authorization)
 
 			if token == "" {
-				return c.JSON(http.StatusUnauthorized, echo.Map{
-					"error": echo.Map{
+				return c.JSON(http.StatusUnauthorized, map[string]any{
+					"error": map[string]any{
 						"tag":     "invalid-auth",
 						"message": "Invalid login credentials.",
 					},
@@ -58,8 +58,8 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 				if err != nil && !strings.Contains(err.Error(), "token has expired: token validation error") {
 					// Token is not valid.
 					// We do not catch token expiration here and let the session manager performs its validation.
-					return c.JSON(http.StatusUnauthorized, echo.Map{
-						"error": echo.Map{
+					return c.JSON(http.StatusUnauthorized, map[string]any{
+						"error": map[string]any{
 							"tag":     "invalid-auth",
 							"message": "Invalid login credentials.",
 						},
@@ -86,8 +86,8 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 				// TODO: Find a way to extract `api` (apiversion) from the requests body.
 				// Revoke old JWT.
 				// if apiversion >= 20190520 && session.UserSupportsSessions(user) {
-				// 	return c.JSON(http.StatusUnauthorized, echo.Map{
-				// 		"error": echo.Map{
+				// 	return c.JSON(http.StatusUnauthorized, map[string]any{
+				// 		"error": map[string]any{
 				// 			"tag":     "invalid-auth",
 				// 			"message": "Invalid login credentials.",
 				// 		},
@@ -103,8 +103,8 @@ func Session(m session.Manager) echo.MiddlewareFunc {
 
 			err = jwt(fake)(c) // Check JWT validity according its claims.
 			if err != nil {
-				return c.JSON(http.StatusUnauthorized, echo.Map{
-					"error": echo.Map{
+				return c.JSON(http.StatusUnauthorized, map[string]any{
+					"error": map[string]any{
 						"tag":     "invalid-auth",
 						"message": "Invalid login credentials.",
 					},

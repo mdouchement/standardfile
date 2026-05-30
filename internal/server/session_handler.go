@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/server/serializer"
 	sessionpkg "github.com/mdouchement/standardfile/internal/server/session"
@@ -28,7 +28,7 @@ type (
 )
 
 // List lists all active sessions for the current user.
-func (s *sess) List(c echo.Context) error {
+func (s *sess) List(c *echo.Context) error {
 	session := currentSession(c)
 	user := currentUser(c)
 
@@ -48,7 +48,7 @@ func (s *sess) List(c echo.Context) error {
 }
 
 // Refresh obtains a new pair of access token and refresh token.
-func (s *sess) Refresh(c echo.Context) error {
+func (s *sess) Refresh(c *echo.Context) error {
 	// Filter params
 	var params refreshSessionParams
 	if err := c.Bind(&params); err != nil {
@@ -108,8 +108,8 @@ func (s *sess) Refresh(c echo.Context) error {
 		return errors.Wrap(err, "could not generate refresh token")
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"session": echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
+		"session": map[string]any{
 			"access_token":       access,
 			"refresh_token":      refresh,
 			"access_expiration":  s.sessions.AccessTokenExprireAt(session).UTC().UnixMilli(),
@@ -119,7 +119,7 @@ func (s *sess) Refresh(c echo.Context) error {
 }
 
 // Delete terminates the specified session by UUID.
-func (s *sess) Delete(c echo.Context) error {
+func (s *sess) Delete(c *echo.Context) error {
 	// Filter params
 	params := deleteSessionParams{
 		ID: c.Param("id"), // Handle /v1/sessions/:id
@@ -155,7 +155,7 @@ func (s *sess) Delete(c echo.Context) error {
 }
 
 // DeleteAll terminates all sessions, except the current one.
-func (s *sess) DeleteAll(c echo.Context) error {
+func (s *sess) DeleteAll(c *echo.Context) error {
 	sessions, err := s.db.FindSessionsByUserID(currentUser(c).ID)
 	if err != nil && !s.db.IsNotFound(err) {
 		return err

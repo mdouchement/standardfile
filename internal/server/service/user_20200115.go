@@ -3,7 +3,6 @@ package service
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server/serializer"
 	sessionpkg "github.com/mdouchement/standardfile/internal/server/session"
@@ -67,7 +66,7 @@ func (s *userService20200115) SuccessfulAuthentication(u *model.User, params Par
 	}
 
 	response["user"] = serializer.User(u)
-	response["session"] = echo.Map{
+	response["session"] = map[string]any{
 		"access_token":       access,
 		"refresh_token":      refresh,
 		"access_expiration":  s.sessions.AccessTokenExprireAt(session).UTC().UnixMilli(),

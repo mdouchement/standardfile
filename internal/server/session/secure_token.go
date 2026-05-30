@@ -20,7 +20,7 @@ func SecureToken(length int) string {
 	})
 	max := big.NewInt(int64(len(chars)))
 
-	for i := 0; i < length; i++ {
+	for i := range length {
 		n, err := rand.Int(rand.Reader, max)
 		if err != nil {
 			panic(err) // should never occured because max >= 0
