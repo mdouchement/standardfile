@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/appleboy/gofight/v2"
-	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fastjson"
@@ -89,7 +88,7 @@ func TestRequestParams20161215(t *testing.T) {
 		hostname, err := os.Hostname()
 		assert.NoError(t, err)
 
-		params := echo.Map{
+		params := map[string]any{
 			"identifier": "nobody@nowhere.lan",
 			"nonce":      sha256.Sum256([]byte("nobody@nowhere.lan" + hostname)),
 			"version":    "004",

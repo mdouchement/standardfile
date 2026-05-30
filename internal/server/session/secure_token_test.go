@@ -14,7 +14,7 @@ func TestSecureToken(t *testing.T) {
 
 	n := 8192
 	h := make(map[string]bool, 0)
-	for i := 0; i < n; i++ {
+	for range n {
 		h[session.SecureToken(24)] = true
 	}
 	assert.Len(t, h, n, "tokens must be unique")

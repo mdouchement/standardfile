@@ -3,7 +3,7 @@ package middlewares
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type binder struct {
@@ -23,7 +23,7 @@ func NewBinder() echo.Binder {
 }
 
 // Bind implements the echo.Bind interface.
-func (b *binder) Bind(i any, c echo.Context) (err error) {
+func (b *binder) Bind(c *echo.Context, target any) (err error) {
 	if c.Request().ContentLength == 0 && b.methodsWithBody[c.Request().Method] {
 		return echo.NewHTTPError(http.StatusBadRequest, "Request body can't be empty")
 	}
@@ -32,5 +32,5 @@ func (b *binder) Bind(i any, c echo.Context) (err error) {
 		c.Request().Header.Set("Content-Type", "application/json")
 	}
 
-	return b.DefaultBinder.Bind(i, c)
+	return b.DefaultBinder.Bind(c, target)
 }

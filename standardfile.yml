@@ -7,6 +7,12 @@
 
 # Address to bind
 address: "localhost:5000"
+# Global listening
+#   address: "0.0.0.0:5000"
+#   address: "tcp://0.0.0.0:5000"
+# Socket listening
+#   address: unix:///tmp/standardfile.sock
+#   socket_mode: 0o660
 cors:
   # allow_origins of your self-hosted standardnotes/web:latest
   allow_origins:

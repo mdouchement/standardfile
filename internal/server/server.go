@@ -7,8 +7,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server/middlewares"
@@ -52,7 +52,7 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 		LogURI:           true,
 		LogLatency:       true,
 		LogContentLength: true,
-		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+		LogValuesFunc: func(c *echo.Context, v middleware.RequestLoggerValues) error {
 			if v.ContentLength != "" {
 				log.Printf("[%d] %s %s (%s) %s", v.Status, v.Method, v.URI, v.ContentLength, v.Latency)
 				return nil
@@ -90,13 +90,13 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 
 	// generic handlers
 	//
-	router.GET("/version", func(c echo.Context) error {
+	router.GET("/version", func(c *echo.Context) error {
 		version := "n/a"
 		if ctrl.ShowRealVersion {
 			version = ctrl.Version
 		}
 
-		return c.JSON(http.StatusOK, echo.Map{
+		return c.JSON(http.StatusOK, map[string]any{
 			"version": version,
 		})
 	})
@@ -172,7 +172,7 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 			SubscriptionPayload: ctrl.SubscriptionPayload,
 			FeaturesPayload:     ctrl.FeaturesPayload,
 		}
-		router.GET("/v2/subscriptions", func(c echo.Context) error {
+		router.GET("/v2/subscriptions", func(c *echo.Context) error {
 			return c.HTML(http.StatusInternalServerError, "getaddrinfo EAI_AGAIN payments")
 		})
 		v1restricted.GET("/users/:id/subscription", subscription.SubscriptionV1)
@@ -184,31 +184,21 @@ func EchoEngine(ctrl Controller) *echo.Echo {
 
 // PrintRoutes prints the Echo engin exposed routes.
 func PrintRoutes(e *echo.Echo) {
-	ignored := map[string]bool{
-		"":      true,
-		".":     true,
-		"/*":    true,
-		"/v1":   true,
-		"/v1/*": true,
-		"/v2":   true,
-		"/v2/*": true,
-	}
-
-	routes := e.Routes()
+	routes := e.Router().Routes()
 	sort.Slice(routes, func(i int, j int) bool {
 		return routes[i].Path < routes[j].Path
 	})
 
 	fmt.Println("Routes:")
 	for _, route := range routes {
-		if ignored[route.Path] {
+		if route.Name == echo.NotFoundRouteName {
 			continue
 		}
 		fmt.Printf("%6s %s\n", route.Method, route.Path)
 	}
 }
 
-func currentUser(c echo.Context) *model.User {
+func currentUser(c *echo.Context) *model.User {
 	user, ok := c.Get(middlewares.CurrentUserContextKey).(*model.User)
 	if ok {
 		return user
@@ -216,7 +206,7 @@ func currentUser(c echo.Context) *model.User {
 	return nil
 }
 
-func currentSession(c echo.Context) *model.Session {
+func currentSession(c *echo.Context) *model.Session {
 	session, ok := c.Get(middlewares.CurrentSessionContextKey).(*model.Session)
 	if ok {
 		return session

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/valyala/fastjson"
 )
 
@@ -13,7 +13,7 @@ type subscription struct {
 	FeaturesPayload     []byte
 }
 
-func (h *subscription) SubscriptionV1(c echo.Context) error {
+func (h *subscription) SubscriptionV1(c *echo.Context) error {
 	user := currentUser(c)
 
 	// The official Standard Notes client has a race condition,
@@ -33,7 +33,7 @@ func (h *subscription) SubscriptionV1(c echo.Context) error {
 	return c.String(http.StatusOK, v.String())
 }
 
-func (h *subscription) Features(c echo.Context) error {
+func (h *subscription) Features(c *echo.Context) error {
 	user := currentUser(c)
 
 	// Overrides some fields of the raw payload to match the current user.

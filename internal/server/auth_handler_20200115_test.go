@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/appleboy/gofight/v2"
-	"github.com/labstack/echo/v4"
 	"github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/internal/sferror"
 	"github.com/mdouchement/standardfile/pkg/libsf"
@@ -95,7 +94,7 @@ func TestRequestParams20200115(t *testing.T) {
 		hostname, err := os.Hostname()
 		assert.NoError(t, err)
 
-		params := echo.Map{
+		params := map[string]any{
 			"identifier": "nobody@nowhere.lan",
 			"nonce":      sha256.Sum256([]byte("nobody@nowhere.lan" + hostname)),
 			"version":    libsf.ProtocolVersion4,
@@ -288,7 +287,6 @@ func TestRequestLoginPKCE20200115(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, user.UpdatedAt.UTC(), timestamp.UTC())
 	})
-
 }
 
 func TestRequestUpdate20200115(t *testing.T) {

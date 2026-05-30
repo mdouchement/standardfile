@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/server/service"
 	"github.com/mdouchement/standardfile/internal/server/session"
@@ -26,7 +26,7 @@ type auth struct {
 
 // Register handler is used to register the user.
 // https://standardfile.org/#api-auth
-func (h *auth) Register(c echo.Context) error {
+func (h *auth) Register(c *echo.Context) error {
 	// Filter params
 	var params service.RegisterParams
 	if err := c.Bind(&params); err != nil {
@@ -63,7 +63,7 @@ func (h *auth) Register(c echo.Context) error {
 
 // Params used for password generation.
 // https://standardfile.org/#get-auth-params
-func (h *auth) Params(c echo.Context) error {
+func (h *auth) Params(c *echo.Context) error {
 	// Fetch params from URL queries
 	email := c.QueryParam("email")
 	if email == "" {
@@ -74,7 +74,7 @@ func (h *auth) Params(c echo.Context) error {
 }
 
 // ParamsPKCE used for password generation with PKCE protection mechanism.
-func (h *auth) ParamsPKCE(c echo.Context) error {
+func (h *auth) ParamsPKCE(c *echo.Context) error {
 	var params service.LoginParams
 	if err := c.Bind(&params); err != nil {
 		log.Println("Could not get parameters:", err)
@@ -101,12 +101,12 @@ func (h *auth) ParamsPKCE(c echo.Context) error {
 	return h.params(c, params.Email)
 }
 
-func (h *auth) params(c echo.Context, email string) error {
+func (h *auth) params(c *echo.Context, email string) error {
 	// Check if the user exists.
 	user, err := h.db.FindUserByMail(email)
 	if err != nil {
 		hostname, _ := os.Hostname()
-		return c.JSON(http.StatusOK, echo.Map{
+		return c.JSON(http.StatusOK, map[string]any{
 			"identifier": email,
 			"nonce":      sha256.Sum256([]byte(email + hostname)),
 			"version":    libsf.ProtocolVersion4,
@@ -117,7 +117,7 @@ func (h *auth) params(c echo.Context, email string) error {
 	// https://github.com/standardfile/ruby-server/blob/master/app/controllers/api/auth_controller.rb#L16
 
 	// Render
-	params := echo.Map{
+	params := map[string]any{
 		"identifier": user.Email,
 		"version":    user.Version,
 	}
@@ -142,7 +142,7 @@ func (h *auth) params(c echo.Context, email string) error {
 
 // Login used for authenticates a user and returns a JWT or a session.
 // https://standardfile.org/#post-auth-sign_in
-func (h *auth) Login(c echo.Context) error {
+func (h *auth) Login(c *echo.Context) error {
 	// Filter params
 	var params service.LoginParams
 	if err := c.Bind(&params); err != nil {
@@ -157,11 +157,10 @@ func (h *auth) Login(c echo.Context) error {
 	}
 
 	return h.login(c, params)
-
 }
 
 // LoginPKCE used for authenticates like Login but add also PKCE mechanism.
-func (h *auth) LoginPKCE(c echo.Context) error {
+func (h *auth) LoginPKCE(c *echo.Context) error {
 	// Filter params
 	var params service.LoginParams
 	if err := c.Bind(&params); err != nil {
@@ -187,7 +186,7 @@ func (h *auth) LoginPKCE(c echo.Context) error {
 	return h.login(c, params)
 }
 
-func (h *auth) login(c echo.Context, params service.LoginParams) error {
+func (h *auth) login(c *echo.Context, params service.LoginParams) error {
 	// TODO 2FA
 	// https://github.com/standardfile/ruby-server/blob/master/app/controllers/api/auth_controller.rb#L16
 
@@ -205,7 +204,7 @@ func (h *auth) login(c echo.Context, params service.LoginParams) error {
 //
 
 // Logout used for terminates the current session.
-func (h *auth) Logout(c echo.Context) error {
+func (h *auth) Logout(c *echo.Context) error {
 	session := currentSession(c)
 	if session != nil {
 		err := h.db.Delete(session)
@@ -222,7 +221,7 @@ func (h *auth) Logout(c echo.Context) error {
 //
 
 // Update used to updates a user.
-func (h *auth) Update(c echo.Context) error {
+func (h *auth) Update(c *echo.Context) error {
 	// Filter params
 	var params service.UpdateUserParams
 	if err := c.Bind(&params); err != nil {
@@ -247,7 +246,7 @@ func (h *auth) Update(c echo.Context) error {
 
 // UpdatePassword used to updates a user's password.
 // https://standardfile.org/#post-auth-change_pw
-func (h *auth) UpdatePassword(c echo.Context) error {
+func (h *auth) UpdatePassword(c *echo.Context) error {
 	// Filter params
 	var params service.UpdatePasswordParams
 	if err := c.Bind(&params); err != nil {

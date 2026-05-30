@@ -77,8 +77,8 @@ type (
 	// A ConflictItem is an object containing an item that can't be saved caused by conflicts.
 	// Used since API version 20190520.
 	ConflictItem struct {
-		UnsavedItem Item   `json:"unsaved_item,omitempty"`
-		ServerItem  Item   `json:"server_item,omitempty"`
+		UnsavedItem Item   `json:"unsaved_item"`
+		ServerItem  Item   `json:"server_item"`
 		Type        string `json:"type"`
 	}
 )

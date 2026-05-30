@@ -7,29 +7,15 @@ import (
 	"time"
 
 	"github.com/appleboy/gofight/v2"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	argon2 "github.com/mdouchement/simple-argon2"
 	"github.com/mdouchement/standardfile/internal/database"
 	"github.com/mdouchement/standardfile/internal/model"
 	"github.com/mdouchement/standardfile/internal/server"
-	"github.com/mdouchement/standardfile/internal/server/session"
 	sessionpkg "github.com/mdouchement/standardfile/internal/server/session"
 	"github.com/mdouchement/standardfile/pkg/libsf"
 	"github.com/stretchr/testify/assert"
 )
-
-// Echo 4.2.2 uses req.RequestURI rewrite middleware which is not defined by gofight.
-// https://github.com/appleboy/gofight/pull/87
-//
-// func TestRequestHome(t *testing.T) {
-// 	engine, _, r, cleanup := setup()
-// 	defer cleanup()
-
-// 	r.GET("/").Run(engine, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
-// 		assert.Equal(t, http.StatusOK, r.Code)
-// 		assert.JSONEq(t, `{"version":"test"}`, r.Body.String())
-// 	})
-// }
 
 func TestRequestVersion(t *testing.T) {
 	engine, _, r, cleanup := setup()
@@ -59,6 +45,8 @@ func setup() (engine *echo.Echo, ctrl server.Controller, r *gofight.RequestConfi
 		Database:                   db,
 		NoRegistration:             false,
 		ShowRealVersion:            true,
+		AllowOrigins:               []string{"http://localhost:3000"},
+		AllowMethods:               []string{"GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"},
 		SigningKey:                 []byte("secret"),
 		SessionSecret:              []byte("00000000000000000000000000000000"),
 		AccessTokenExpirationTime:  60 * 24 * time.Hour,
@@ -118,9 +106,9 @@ func createUserWithSession(ctrl server.Controller) (*model.User, *model.Session)
 		APIVersion:   "20200115",
 		UserAgent:    "Go-http-client/1.1",
 		UserID:       user.ID,
-		ExpireAt:     time.Now().Add(ctrl.RefreshTokenExpirationTime).UTC(),
-		AccessToken:  session.SecureToken(8),
-		RefreshToken: session.SecureToken(8),
+		ExpireAt:     time.Now().Add(ctrl.RefreshTokenExpirationTime - 100*time.Millisecond).UTC(), // We drop 100ms to make sure the regenerate token works well (test can go really quick and fails)
+		AccessToken:  sessionpkg.SecureToken(8),
+		RefreshToken: sessionpkg.SecureToken(8),
 	}
 	err = ctrl.Database.Save(session)
 	if err != nil {

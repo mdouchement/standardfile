@@ -134,7 +134,7 @@ func TestRequestSessionList(t *testing.T) {
 
 	sessions := session.NewManager(ctrl.Database, ctrl.SigningKey, ctrl.SessionSecret, ctrl.AccessTokenExpirationTime, ctrl.RefreshTokenExpirationTime)
 	user, session := createUserWithSession(ctrl)
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		s := sessions.Generate()
 		s.UserID = user.ID
 		s.APIVersion = session.APIVersion
@@ -355,7 +355,7 @@ func TestRequestSessionDeleteAll(t *testing.T) {
 	sessions := session.NewManager(ctrl.Database, ctrl.SigningKey, ctrl.SessionSecret, ctrl.AccessTokenExpirationTime, ctrl.RefreshTokenExpirationTime)
 	user, session := createUserWithSession(ctrl)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		s := sessions.Generate()
 		s.UserID = user.ID
 		s.APIVersion = session.APIVersion

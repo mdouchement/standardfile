@@ -26,7 +26,7 @@ type (
 		from      string
 		Version   string `json:"v"`
 		UserID    string `json:"u"`
-		KeyParams auth   `json:"kp,omitempty"`
+		KeyParams auth   `json:"kp"`
 	}
 )
 
@@ -190,7 +190,7 @@ func (d *authenticatedData) toSortedKeysJSON() []byte {
 	values = append(values, fmt.Sprintf(`"u":"%s"`, d.UserID))
 	values = append(values, fmt.Sprintf(`"v":"%s"`, d.Version))
 
-	return []byte(fmt.Sprintf("{%s}", strings.Join(values, ",")))
+	return fmt.Appendf(nil, "{%s}", strings.Join(values, ","))
 }
 
 ////
