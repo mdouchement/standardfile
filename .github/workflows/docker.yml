@@ -11,9 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Fetch all history for all branches and tags
+          fetch-tags: true
       #
       - name: Prepare
         id: prep
